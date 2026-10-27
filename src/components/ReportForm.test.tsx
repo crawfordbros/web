@@ -94,7 +94,7 @@ describe("ReportForm", () => {
     await screen.findByRole("option", { name: "Demo Community" });
     await userEvent.type(screen.getByLabelText("Building and unit"), "Bldg 4, Unit 412");
     await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
-    await userEvent.type(screen.getByLabelText("Phone or email"), "(470) 585-2776");
+    await userEvent.type(screen.getByLabelText("Phone or email"), "(404) 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
 
     expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();

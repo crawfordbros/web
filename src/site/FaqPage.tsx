@@ -126,7 +126,7 @@ export function FaqPage() {
     <>
       <PageHero eyebrow="Questions and answers" title="Frequently asked questions">
         <p className="m-0">
-          Can't find your answer? Call <a href={business.phoneHref} className="text-white">{business.phone}</a> or{" "}
+          Can't find your answer? Email <a href={`mailto:${business.email}`} className="text-white">{business.email}</a> or{" "}
           <Link to="/contact" className="text-white">send us a message</Link>.
         </p>
       </PageHero>

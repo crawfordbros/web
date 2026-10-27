@@ -28,12 +28,8 @@ export function QuotePage() {
             <CheckItem>Licensed and insured</CheckItem>
           </ul>
           <div className="rounded-xl bg-navy p-6 leading-loose text-white">
-            <p className="m-0 font-bold">Prefer to call?</p>
+            <p className="m-0 font-bold">Prefer email?</p>
             <p className="m-0">
-              <a href={business.phoneHref} className="text-white hover:text-gold-light">
-                {business.phone}
-              </a>
-              <br />
               <a href={`mailto:${business.email}`} className="text-white hover:text-gold-light">
                 {business.email}
               </a>

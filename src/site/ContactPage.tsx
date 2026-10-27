@@ -7,7 +7,7 @@ import { Container, PageHero } from "../components/ui";
 export function ContactPage() {
   useSeo({
     title: "Contact",
-    description: "Call (470) 585-2776 or email office@cbenvironments.com. CB Environment Solutions, PO Box 645, Clarkston, GA 30021.",
+    description: "Email office@cbenvironments.com or send us a message. CB Environment Solutions, PO Box 645, Clarkston, GA 30021.",
     path: "/contact",
   });
 
@@ -19,10 +19,8 @@ export function ContactPage() {
       <Container className="grid grid-cols-1 gap-10 py-14 sm:py-20 lg:grid-cols-[1fr_1.5fr] lg:gap-12">
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-line p-6">
-            <h2 className="mt-0 mb-3 text-xl font-bold text-navy">Call or email</h2>
+            <h2 className="mt-0 mb-3 text-xl font-bold text-navy">Email</h2>
             <p className="m-0 text-[17px] leading-loose">
-              <a href={business.phoneHref} className="font-semibold">{business.phone}</a>
-              <br />
               <a href={`mailto:${business.email}`} className="font-semibold">{business.email}</a>
             </p>
           </div>

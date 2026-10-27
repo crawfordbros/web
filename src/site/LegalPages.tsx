@@ -47,7 +47,7 @@ export function PrivacyPage() {
       </p>
       <h2>Contact</h2>
       <p>
-        Questions about your information: {business.email}, {business.phone}, {business.mailingAddress}.
+        Questions about your information: {business.email}, {business.mailingAddress}.
       </p>
     </Legal>
   );
@@ -73,7 +73,7 @@ export function TermsPage() {
       </p>
       <h2>Contact</h2>
       <p>
-        {business.email}, {business.phone}, {business.mailingAddress}.
+        {business.email}, {business.mailingAddress}.
       </p>
     </Legal>
   );

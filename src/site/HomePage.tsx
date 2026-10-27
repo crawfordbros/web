@@ -282,10 +282,6 @@ export function HomePage() {
               Tell us about your property and Nick or Nigel will reach out within 24 hours.
             </p>
             <p className="m-0 leading-loose">
-              <a href={business.phoneHref} className="text-white hover:text-gold-light">
-                {business.phone}
-              </a>
-              <br />
               <a href={`mailto:${business.email}`} className="text-white hover:text-gold-light">
                 {business.email}
               </a>

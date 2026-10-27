@@ -45,8 +45,8 @@ export function ReportStatusPage() {
               {query.error instanceof ApiError && query.error.status === 404 ? "We couldn't find that report" : "Something went wrong"}
             </h1>
             <p className="mb-5 leading-relaxed text-muted">
-              Check that you opened the full link from your confirmation email. You can also call us at{" "}
-              <a href={business.phoneHref}>{business.phone}</a>.
+              Check that you opened the full link from your confirmation email. You can also email us at{" "}
+              <a href={`mailto:${business.email}`}>{business.email}</a>.
             </p>
             <Link to="/report" className="font-bold">
               Report a new issue
@@ -88,7 +88,7 @@ export function ReportStatusPage() {
             </dl>
 
             <p className="mt-8 mb-0 text-[15px] leading-relaxed text-muted">
-              Questions about this report? Call <a href={business.phoneHref}>{business.phone}</a> or email{" "}
+              Questions about this report? Email{" "}
               <a href={`mailto:${business.email}?subject=Report%20%23${query.data.refNo}`}>{business.email}</a> with
               your report number.
             </p>

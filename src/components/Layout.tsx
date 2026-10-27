@@ -191,8 +191,6 @@ function Footer() {
         <div className="flex-[1_1_220px] text-[15px] leading-relaxed">
           <p className="mt-0 mb-2 font-bold text-white">Contact</p>
           <p className="m-0">
-            <a href={business.phoneHref} className={link}>{business.phone}</a>
-            <br />
             <a href={`mailto:${business.email}`} className={link}>{business.email}</a>
             <br />
             {business.mailingAddress}

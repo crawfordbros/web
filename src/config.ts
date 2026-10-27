@@ -47,8 +47,6 @@ export const portalLoginUrl = `${config.portalUrl}/portal/login`;
 
 /** Business facts used across pages. Values in [brackets] are waiting on CBES (BUILD_BRIEF section 12). */
 export const business = {
-  phone: "(470) 585-2776",
-  phoneHref: "tel:+14705852776",
   email: "office@cbenvironments.com",
   mailingAddress: "PO Box 645, Clarkston, GA 30021",
   counties: ["DeKalb", "Gwinnett", "Cobb", "Fulton", "South Fulton"],

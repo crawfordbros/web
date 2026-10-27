@@ -60,8 +60,8 @@ export function QuoteForm() {
       <div role="status" className="min-w-0 flex-[1_1_560px] rounded-2xl border border-line bg-white p-6 sm:p-9">
         <h2 className="mt-0 mb-3 text-[28px] font-bold text-navy">Thanks. We got your request.</h2>
         <p className="m-0 text-[17px] leading-relaxed text-muted">
-          Nick or Nigel will reach out within 24 hours. Need us sooner? Call{" "}
-          <a href={business.phoneHref}>{business.phone}</a>.
+          Nick or Nigel will reach out within 24 hours. Need us sooner? Email{" "}
+          <a href={`mailto:${business.email}`}>{business.email}</a>.
         </p>
       </div>
     );

@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-const NETWORK_ERROR = "We couldn't reach the server. Check your connection and try again, or call (470) 585-2776.";
+const NETWORK_ERROR = "We couldn't reach the server. Check your connection and try again, or email office@cbenvironments.com.";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
