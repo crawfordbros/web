@@ -16,8 +16,14 @@ const renderAt = (ui: React.ReactNode, url = "/quote") => render(<MemoryRouter i
 beforeEach(() => vi.clearAllMocks());
 
 describe("QuoteForm", () => {
-  it("carries over the home page short form", () => {
-    renderAt(<QuoteForm />, "/quote?name=Pat&community=Maple%20Ridge&email=pat%40example.com&units=240");
+  it("carries over the home page short form without putting it in the URL", () => {
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: "/quote", state: { name: "Pat", community: "Maple Ridge", email: "pat@example.com", units: "240" } }]}
+      >
+        <QuoteForm />
+      </MemoryRouter>,
+    );
     expect(screen.getByLabelText("Full name")).toHaveValue("Pat");
     expect(screen.getByLabelText("Community name")).toHaveValue("Maple Ridge");
     expect(screen.getByLabelText("Email")).toHaveValue("pat@example.com");
@@ -42,7 +48,13 @@ describe("QuoteForm", () => {
   });
 
   it("submits a quote and confirms", async () => {
-    renderAt(<QuoteForm />, "/quote?name=Pat&community=Maple%20Ridge&email=pat%40example.com&units=240");
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: "/quote", state: { name: "Pat", community: "Maple Ridge", email: "pat@example.com", units: "240" } }]}
+      >
+        <QuoteForm />
+      </MemoryRouter>,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Request my quote" }));
     await waitFor(() => expect(api.submitQuote).toHaveBeenCalled());
     expect(vi.mocked(api.submitQuote).mock.calls[0][0]).toMatchObject({

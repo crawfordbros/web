@@ -5,6 +5,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cbes-web-local",
   "compatibility_date": "2026-10-01",
+  // Only reachable on the cbenvironments.com routes below, never on *.workers.dev.
+  "workers_dev": false,
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"

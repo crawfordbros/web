@@ -83,9 +83,8 @@ function QuoteStarter() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(values)) if (v.trim()) params.set(k, v.trim());
-    navigate({ pathname: "/quote", search: params.toString(), hash: "#quote-form" });
+    // Navigation state, not the query string: contact details must not land in URLs, history or logs.
+    navigate({ pathname: "/quote", hash: "#quote-form" }, { state: values });
   };
 
   return (

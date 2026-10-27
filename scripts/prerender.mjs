@@ -6,7 +6,17 @@ import { pathToFileURL } from "node:url";
 
 const dist = path.resolve("dist");
 const serverEntry = pathToFileURL(path.resolve("dist-server/entry-server.js")).href;
-const { render, PRERENDERED_PATHS } = await import(serverEntry);
+const { render, PRERENDERED_PATHS, config } = await import(serverEntry);
+
+// Refuse to ship forms that can never pass the spam check.
+if (config.turnstileSiteKey.startsWith("REPLACE_")) {
+  rmSync("dist-server", { recursive: true, force: true });
+  console.error(
+    "\nBuild stopped: set the Turnstile site key for this environment in src/config.ts " +
+      "(or pass VITE_TURNSTILE_SITE_KEY) before building for staging or production.\n",
+  );
+  process.exit(1);
+}
 // Preload the body and heading fonts so text doesn't repaint late when they arrive.
 const fonts = readdirSync(path.join(dist, "assets")).filter((f) =>
   /^(open-sans-latin-400-normal|fira-sans-latin-700-normal)-.*\.woff2$/.test(f),

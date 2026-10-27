@@ -6,8 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppRoutes } from "./routes";
 import { PRERENDERED_PATHS } from "./prerender-paths";
 import { ssrHead } from "./lib/seo";
+import { config } from "./config";
 
-export { PRERENDERED_PATHS };
+export { PRERENDERED_PATHS, config };
 
 export function render(url: string): Promise<{ html: string; head: typeof ssrHead.current }> {
   ssrHead.current = null;

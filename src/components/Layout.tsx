@@ -200,7 +200,7 @@ function Footer() {
         </div>
       </Container>
       <Container className="flex flex-wrap justify-between gap-3 border-t border-navy-soft pt-4 pb-8 text-[13px]">
-        <span>© {new Date().getFullYear()} CB Environment Solutions LLC</span>
+        <span>© {__BUILD_YEAR__} CB Environment Solutions LLC</span>
         <span>
           <Link to="/privacy" className="text-on-navy hover:text-white">Privacy</Link> ·{" "}
           <Link to="/terms" className="text-on-navy hover:text-white">Terms</Link>

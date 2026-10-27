@@ -53,7 +53,7 @@ test("property manager starts a quote on the home page and finishes it on the qu
   await starter.getByLabel("Number of units").fill("240");
   await starter.getByRole("button", { name: "Request a Quote" }).click();
 
-  await expect(page).toHaveURL(/\/quote\?/);
+  await expect(page).toHaveURL(/\/quote#quote-form$/);
   const form = page.getByRole("form", { name: "Request a quote" });
   await expect(form.getByLabel("Full name")).toHaveValue("E2E Manager");
   await form.getByLabel("Phone").fill("(404) 555-0100");

@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSearchParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   PROPERTY_TYPES,
   PROPERTY_TYPE_LABELS,
@@ -33,7 +33,8 @@ function Section({ step, title, children }: { step: number; title: string; child
 }
 
 export function QuoteForm() {
-  const [params] = useSearchParams();
+  // Values typed into the home page quote starter arrive as navigation state.
+  const starter = (useLocation().state ?? {}) as Partial<Record<"name" | "email" | "community" | "units", string>>;
   const {
     register,
     handleSubmit,
@@ -43,10 +44,10 @@ export function QuoteForm() {
     resolver: zodResolver(quoteSchema),
     defaultValues: {
       kind: "quote",
-      fullName: params.get("name") ?? "",
-      email: params.get("email") ?? "",
-      communityName: params.get("community") ?? "",
-      unitCount: params.get("units") ?? "",
+      fullName: starter.name ?? "",
+      email: starter.email ?? "",
+      communityName: starter.community ?? "",
+      unitCount: starter.units ?? "",
       services: ["valet_trash", "pressure_washing"],
     },
   });

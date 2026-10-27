@@ -26,6 +26,7 @@ function robots(): Plugin {
 // /api is proxied to the cbes-api Worker running with `pnpm dev` in that repo.
 export default defineConfig({
   plugins: [react(), tailwindcss(), robots()],
+  define: { __BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
   server: {
     host: true,
     port: 5173,

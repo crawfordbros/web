@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -16,16 +17,18 @@ vi.mock("../lib/api", async (orig) => {
 });
 const api = await import("../lib/api");
 
-function renderForm(url = "/report") {
+function formTree(url: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  return (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[url]}>
         <ReportForm />
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
+
+const renderForm = (url = "/report") => render(formTree(url));
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -100,5 +103,30 @@ describe("ReportForm", () => {
     await userEvent.type(screen.getByLabelText("Phone or email"), "jordan@example.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
     expect(await screen.findByText("Choose your community from the list")).toBeInTheDocument();
+  });
+
+  it("leaves the date limit out of prerendered HTML so it never freezes at the build date", () => {
+    expect(renderToString(formTree("/report"))).not.toMatch(/type="date"[^>]*max=/);
+  });
+
+  it("sets today's date as the limit once running in the browser", async () => {
+    renderForm();
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    await waitFor(() => expect(screen.getByLabelText("Date of issue")).toHaveAttribute("max", today));
+  });
+
+  it("drops the QR unit code when the resident changes the unit", async () => {
+    renderForm("/report?p=demo-community&u=412");
+    await screen.findByRole("option", { name: "Demo Community" });
+    const unit = screen.getByLabelText("Building and unit");
+    await userEvent.clear(unit);
+    await userEvent.type(unit, "Bldg 2, Unit 205");
+    await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
+    await userEvent.type(screen.getByLabelText("Phone or email"), "jordan@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    await waitFor(() => expect(api.submitResidentReport).toHaveBeenCalled());
+    const [data] = vi.mocked(api.submitResidentReport).mock.calls[0];
+    expect(data.unitCode).toBeUndefined();
+    expect(data.unitText).toBe("Bldg 2, Unit 205");
   });
 });

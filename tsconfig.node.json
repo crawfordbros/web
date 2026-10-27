@@ -24,6 +24,7 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "tests",
-    "src/entry-server.tsx"
+    "src/entry-server.tsx",
+    "src/build-env.d.ts"
   ]
 }

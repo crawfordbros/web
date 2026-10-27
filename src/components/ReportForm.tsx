@@ -180,8 +180,11 @@ export function ReportForm({ className }: { className?: string }) {
       return;
     }
     try {
+      // The hidden QR unit code only applies while the community and unit are still what the QR code filled in.
+      const qrUnitUnchanged = Boolean(qrUnit) && data.propertySlug === qrProperty && data.unitText === `Unit ${qrUnit}`;
+      const payload = qrUnitUnchanged ? data : { ...data, unitCode: undefined };
       const blobs = await Promise.all(photos.map((p) => compressPhoto(p.file)));
-      const result = await submitResidentReport(data, blobs, turnstileToken);
+      const result = await submitResidentReport(payload, blobs, turnstileToken);
       photos.forEach((p) => URL.revokeObjectURL(p.url));
       setDone(result);
     } catch (err) {
@@ -252,7 +255,8 @@ export function ReportForm({ className }: { className?: string }) {
       <TextField
         label="Date of issue"
         type="date"
-        max={todayIso()}
+        // Set only in the browser: prerendered HTML would freeze the limit at the build date.
+        max={hydrated ? todayIso() : undefined}
         error={errors.issueDate?.message}
         {...register("issueDate")}
       />
