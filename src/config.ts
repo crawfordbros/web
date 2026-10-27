@@ -32,8 +32,9 @@ const base = CONFIGS[import.meta.env.MODE] ?? CONFIGS.development;
 
 export const config: SiteConfig = {
   ...base,
-  // Optional local override, e.g. VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA pnpm dev
-  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY ?? base.turnstileSiteKey,
+  // Optional override from .env.local or the shell, e.g. VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA pnpm dev.
+  // A blank value falls back to the mode's key, since Vite loads .env.local for production builds too.
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || base.turnstileSiteKey,
 };
 
 /** Forms must carry a Turnstile token when a site key is configured. */
