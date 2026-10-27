@@ -273,7 +273,7 @@ export function ReportForm({ className }: { className?: string }) {
       />
 
       <div className="flex flex-col gap-4 sm:col-span-2">
-        <TurnstileField ref={turnstile} armed={armed} onToken={setToken} />
+        <TurnstileField ref={turnstile} action="resident_report" armed={armed} onToken={setToken} />
         {formError && <FormAlert>{formError}</FormAlert>}
         <Button type="submit" disabled={isSubmitting || !hydrated} className="w-full sm:w-auto sm:justify-self-start">
           {isSubmitting ? "Sending…" : "Submit report"}

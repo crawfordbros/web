@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const API_DEV_URL = process.env.CBES_API_DEV_URL ?? "http://localhost:8787";
 
-/** Staging and production builds stop unless these keys are set (.env.<mode>.local or the shell). */
+/** Builds require values from .env.local locally or Render environment variables in production. */
 function requireEnv(names: string[]): Plugin {
   return {
     name: "cbes-require-env",
@@ -14,7 +14,7 @@ function requireEnv(names: string[]): Plugin {
       const missing = names.filter((name) => !config.env[name]);
       if (missing.length) {
         throw new Error(
-          `Build stopped: set ${missing.join(", ")} in .env.${config.mode}.local (see .env.example) for the ${config.mode} build.`,
+          `Build stopped: set ${missing.join(", ")} in Render's Environment settings, or .env.local for local builds (see .env.example).`,
         );
       }
     },

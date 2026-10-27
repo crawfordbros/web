@@ -46,7 +46,7 @@ export function ContactForm() {
       <TextField label="Company or community" optional autoComplete="organization" {...register("company")} />
       <TextArea label="Message" className="sm:col-span-2" error={errors.notes?.message} {...register("notes")} />
       <div className="flex flex-col gap-4 sm:col-span-2">
-        <TurnstileField ref={turnstile} armed={armed} onToken={setToken} />
+        <TurnstileField ref={turnstile} action="contact" armed={armed} onToken={setToken} />
         {formError && <FormAlert>{formError}</FormAlert>}
         <Button type="submit" disabled={isSubmitting || !hydrated} className="w-full sm:w-auto sm:self-start">
           {isSubmitting ? "Sending…" : "Send message"}

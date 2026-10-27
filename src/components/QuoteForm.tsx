@@ -110,7 +110,7 @@ export function QuoteForm() {
       </Section>
 
       <div className="flex flex-col gap-4">
-        <TurnstileField ref={turnstile} armed={armed} onToken={setToken} />
+        <TurnstileField ref={turnstile} action="quote" armed={armed} onToken={setToken} />
         {formError && <FormAlert>{formError}</FormAlert>}
         <Button type="submit" disabled={isSubmitting || !hydrated} className="w-full sm:w-auto sm:self-start">
           {isSubmitting ? "Sending…" : "Request my quote"}

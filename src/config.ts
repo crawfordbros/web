@@ -1,6 +1,6 @@
 // Public, per-environment settings. Nothing secret belongs here: this ships to every browser.
 // The build mode picks the block: `vite` = development, `vite build --mode staging`, `vite build` = production.
-// Keys come from env files (see .env.example), never from this file.
+// Keys come from .env.local locally or Render environment variables (see .env.example).
 
 type SiteConfig = {
   /** Canonical origin for links and meta tags. */
