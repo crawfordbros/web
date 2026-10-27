@@ -33,7 +33,7 @@ test("resident submits a report from a QR link and opens the status page", async
 });
 
 test("report form shows inline errors instead of submitting an empty form", async ({ page }) => {
-  await page.goto("/residents#report");
+  await page.goto("/report");
   await page.getByRole("button", { name: "Submit report" }).click();
   await expect(page.getByText("Choose your community")).toBeVisible();
   await expect(page.getByText("Enter your building and unit")).toBeVisible();

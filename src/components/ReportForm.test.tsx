@@ -43,6 +43,18 @@ describe("ReportForm", () => {
     expect(api.submitResidentReport).not.toHaveBeenCalled();
   });
 
+  it("keeps the errors showing when the community list arrives after an early submit", async () => {
+    let finish!: (rows: { name: string; slug: string }[]) => void;
+    vi.mocked(api.getProperties).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    renderForm();
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    expect(await screen.findByText("Enter your building and unit")).toBeInTheDocument();
+
+    finish([{ name: "Demo Community", slug: "demo-community" }]);
+    await screen.findByRole("option", { name: "Demo Community" });
+    expect(screen.getByText("Enter your building and unit")).toBeInTheDocument();
+  });
+
   it("pre-fills community and unit from a QR link and marks the source", async () => {
     renderForm("/report?p=demo-community&u=412");
     await screen.findByRole("option", { name: "Demo Community" });
@@ -72,8 +84,8 @@ describe("ReportForm", () => {
     expect(screen.getByLabelText("Community name")).toBeInTheDocument();
   });
 
-  it("pre-selects bulk pickup from the residents page link", async () => {
-    renderForm("/residents?type=bulk_pickup_request");
+  it("pre-selects bulk pickup from the residents page link to /report", async () => {
+    renderForm("/report?type=bulk_pickup_request");
     expect(await screen.findByRole("radio", { name: "Bulk pickup request" })).toBeChecked();
   });
 

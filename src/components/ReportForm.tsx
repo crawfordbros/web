@@ -154,9 +154,10 @@ export function ReportForm({ className }: { className?: string }) {
     defaultValues: defaults,
   });
 
-  // Re-apply defaults once the community list arrives so a QR pre-fill selects its option.
+  // Re-apply defaults once the community list arrives so a QR pre-fill selects its option. Keep any
+  // errors from a submit that beat the list, so they don't vanish.
   useEffect(() => {
-    if (properties.data) reset(defaults, { keepDirtyValues: true });
+    if (properties.data) reset(defaults, { keepDirtyValues: true, keepErrors: true, keepIsSubmitted: true });
   }, [properties.data, defaults, reset]);
 
   const [photos, setPhotos] = useState<Photo[]>([]);

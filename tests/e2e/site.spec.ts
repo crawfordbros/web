@@ -48,3 +48,12 @@ test("unknown pages show a 404 with useful links", async ({ page }) => {
   await page.goto("/does-not-exist");
   await expect(page.getByRole("heading", { name: "We couldn't find that page" })).toBeVisible();
 });
+
+test("residents page sends people to the separate report page instead of embedding the form", async ({ page }) => {
+  await page.goto("/residents");
+  await expect(page.getByRole("button", { name: "Submit report" })).toHaveCount(0);
+  await page.getByRole("main").getByRole("link", { name: "Book a bulk pickup" }).click();
+  await expect(page).toHaveURL(/\/report\?type=bulk_pickup_request$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Report an Issue" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: /bulk pickup/i })).toBeChecked();
+});

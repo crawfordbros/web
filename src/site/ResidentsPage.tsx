@@ -1,14 +1,13 @@
 import { Link } from "react-router-dom";
 import { business } from "../config";
 import { useSeo } from "../lib/seo";
-import { ReportForm } from "../components/ReportForm";
 import { ButtonLink, Container, Pending } from "../components/ui";
 
 export function ResidentsPage() {
   useSeo({
-    title: "For Residents: Rules, Service Nights and Report an Issue",
+    title: "For Residents: Trash Rules and Service Nights",
     description:
-      "How doorstep valet trash works at your community: bag and tie trash, container out by 8 PM Sunday to Thursday. Report a missed pickup or issue online.",
+      "How doorstep valet trash works at your community: bag and tie trash, container out by 8 PM Sunday to Thursday. Report a missed pickup or other issue online.",
     path: "/residents",
   });
 
@@ -31,7 +30,7 @@ export function ResidentsPage() {
               Out by 8 PM, gone by morning. Here is how doorstep pickup works at your community.
             </p>
           </div>
-          <ButtonLink to="#report" variant="light" className="w-full sm:w-auto">
+          <ButtonLink to="/report" variant="light" className="w-full sm:w-auto">
             Report an Issue
           </ButtonLink>
         </Container>
@@ -78,7 +77,7 @@ export function ResidentsPage() {
             <p className="mt-0 mb-3 leading-relaxed text-muted">
               Moving out or replacing furniture? We'll haul it away for a per-load rate.
             </p>
-            <Link to="?type=bulk_pickup_request#report" className="font-bold">
+            <Link to="/report?type=bulk_pickup_request" className="font-bold">
               Book a bulk pickup
             </Link>
           </div>
@@ -96,13 +95,17 @@ export function ResidentsPage() {
         </div>
       </Container>
 
-      <section id="report" className="bg-surface">
-        <Container className="max-w-[880px] py-14 sm:py-20">
-          <h2 className="mb-2 text-[28px] font-bold text-navy sm:text-4xl">Report an Issue</h2>
-          <p className="mb-8 text-[17px] text-muted">
-            We reply within 24 hours. Your report is also shared with your property management team.
-          </p>
-          <ReportForm />
+      <section className="bg-surface">
+        <Container className="flex flex-wrap items-center justify-between gap-6 py-12 sm:py-14">
+          <div className="min-w-0">
+            <h2 className="mb-2 text-[28px] font-bold text-navy sm:text-4xl">Something go wrong?</h2>
+            <p className="m-0 text-[17px] text-muted">
+              Missed pickup, trash in a hallway or a damaged container? We reply within 24 hours.
+            </p>
+          </div>
+          <ButtonLink to="/report" className="w-full sm:w-auto">
+            Report an Issue
+          </ButtonLink>
         </Container>
       </section>
     </>
