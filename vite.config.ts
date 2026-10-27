@@ -4,6 +4,23 @@ import tailwindcss from "@tailwindcss/vite";
 
 const API_DEV_URL = process.env.CBES_API_DEV_URL ?? "http://localhost:8787";
 
+/** Staging and production builds stop unless these keys are set (.env.<mode>.local or the shell). */
+function requireEnv(names: string[]): Plugin {
+  return {
+    name: "cbes-require-env",
+    apply: "build",
+    configResolved(config) {
+      if (config.mode === "development") return;
+      const missing = names.filter((name) => !config.env[name]);
+      if (missing.length) {
+        throw new Error(
+          `Build stopped: set ${missing.join(", ")} in .env.${config.mode}.local (see .env.example) for the ${config.mode} build.`,
+        );
+      }
+    },
+  };
+}
+
 /** Production allows crawling; every other build (staging, local) is noindex. */
 function robots(): Plugin {
   let mode = "development";
@@ -25,7 +42,8 @@ function robots(): Plugin {
 // Local development: http://test.cbenvironments.com:5173 (see README for the DNS or hosts entry).
 // /api is proxied to the cbes-api Worker running with `pnpm dev` in that repo.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), robots()],
+  // Refuse to ship forms that can never pass the spam check.
+  plugins: [react(), tailwindcss(), robots(), requireEnv(["VITE_TURNSTILE_SITE_KEY"])],
   define: { __BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
   server: {
     host: true,

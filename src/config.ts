@@ -1,5 +1,6 @@
 // Public, per-environment settings. Nothing secret belongs here: this ships to every browser.
 // The build mode picks the block: `vite` = development, `vite build --mode staging`, `vite build` = production.
+// Keys come from env files (see .env.example), never from this file.
 
 type SiteConfig = {
   /** Canonical origin for links and meta tags. */
@@ -10,21 +11,20 @@ type SiteConfig = {
   turnstileSiteKey: string;
 };
 
-const CONFIGS: Record<string, SiteConfig> = {
+type UrlConfig = Omit<SiteConfig, "turnstileSiteKey">;
+
+const CONFIGS: Record<string, UrlConfig> = {
   development: {
     siteUrl: "http://test.cbenvironments.com:5173",
     portalUrl: "http://test.cbenvironments.com:5174",
-    turnstileSiteKey: "",
   },
   staging: {
     siteUrl: "https://staging.cbenvironments.com",
     portalUrl: "",
-    turnstileSiteKey: "REPLACE_WITH_TURNSTILE_SITE_KEY",
   },
   production: {
     siteUrl: "https://cbenvironments.com",
     portalUrl: "",
-    turnstileSiteKey: "REPLACE_WITH_TURNSTILE_SITE_KEY",
   },
 };
 
@@ -32,9 +32,8 @@ const base = CONFIGS[import.meta.env.MODE] ?? CONFIGS.development;
 
 export const config: SiteConfig = {
   ...base,
-  // Optional override from .env.local or the shell, e.g. VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA pnpm dev.
-  // A blank value falls back to the mode's key, since Vite loads .env.local for production builds too.
-  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || base.turnstileSiteKey,
+  // Staging and production builds refuse to start without it (vite.config.ts).
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "",
 };
 
 /** Forms must carry a Turnstile token when a site key is configured. */
