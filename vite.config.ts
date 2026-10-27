@@ -41,7 +41,7 @@ function robots(): Plugin {
 
 // Local development: http://test.cbenvironments.com:5173 (see README for the DNS or hosts entry).
 // /api is proxied to the cbes-api Worker running with `pnpm dev` in that repo.
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Refuse to ship forms that can never pass the spam check.
   plugins: [react(), tailwindcss(), robots(), requireEnv(["VITE_TURNSTILE_SITE_KEY"])],
   define: { __BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
@@ -50,6 +50,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: ["test.cbenvironments.com", "localhost"],
+    ws: mode === "tunnel" ? { protocol: "wss", host: "test.cbenvironments.com", clientPort: 443 } : undefined,
     proxy: { "/api": { target: API_DEV_URL } },
   },
   preview: {
@@ -57,4 +58,4 @@ export default defineConfig({
     allowedHosts: ["test.cbenvironments.com", "localhost"],
     proxy: { "/api": { target: API_DEV_URL } },
   },
-});
+}));

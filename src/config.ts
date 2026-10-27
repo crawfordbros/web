@@ -18,6 +18,10 @@ const CONFIGS: Record<string, UrlConfig> = {
     siteUrl: "http://test.cbenvironments.com:5173",
     portalUrl: "http://test.cbenvironments.com:5174",
   },
+  tunnel: {
+    siteUrl: "https://test.cbenvironments.com",
+    portalUrl: "https://testadmin.cbenvironments.com",
+  },
   staging: {
     siteUrl: "https://staging.cbenvironments.com",
     portalUrl: "",
