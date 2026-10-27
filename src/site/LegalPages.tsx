@@ -15,7 +15,7 @@ function Legal({ title, children }: { title: string; children: ReactNode }) {
   return (
     <>
       <PageHero title={title} />
-      <Container className="max-w-[820px] py-12 sm:py-16">
+      <Container className="max-w-205 py-12 sm:py-16">
         <DraftNotice />
         <div className="flex flex-col gap-4 text-[17px] leading-relaxed [&_h2]:mt-6 [&_h2]:mb-0 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-navy [&_p]:m-0">
           {children}
