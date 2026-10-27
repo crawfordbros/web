@@ -1,0 +1,25 @@
+// CBES public website: static assets on Cloudflare Workers.
+// Routes, not custom domains, so the more specific /api/* (cbes-api) and /portal*, /admin* (cbes-admin)
+// routes on the same hostnames win over this catch-all.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cbes-web-local",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "staging": {
+      "name": "cbes-web-staging",
+      "routes": [{ "pattern": "staging.cbenvironments.com/*", "zone_name": "cbenvironments.com" }]
+    },
+    "production": {
+      "name": "cbes-web",
+      "routes": [
+        { "pattern": "cbenvironments.com/*", "zone_name": "cbenvironments.com" },
+        { "pattern": "www.cbenvironments.com/*", "zone_name": "cbenvironments.com" }
+      ]
+    }
+  }
+}
