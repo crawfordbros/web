@@ -89,7 +89,7 @@ export const SelectField = forwardRef<HTMLSelectElement, FieldShellProps & Compo
         <select
           ref={ref}
           id={id}
-          className={cx(control, "appearance-auto")}
+          className={control}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(id, error, hint)}
           {...props}
