@@ -15,6 +15,13 @@ export const ISSUE_TYPES = [
 ] as const;
 export type IssueType = (typeof ISSUE_TYPES)[number];
 
+/**
+ * An issue type key. The list lives in the issue_types table (Settings → Resident issue types), so
+ * the API checks the key exists; ISSUE_TYPES above are the original eight.
+ */
+export const issueTypeKey = (message: string) =>
+  z.string({ error: message }).trim().min(1, message).max(60, message).regex(/^[a-z0-9_]+$/, message);
+
 export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
   missed_pickup: "Missed pickup",
   trash_in_hallway: "Trash in hallway",
@@ -104,7 +111,7 @@ export const residentReportSchema = z
       .min(1, "Enter a phone number or email")
       .max(120)
       .refine(isEmailOrPhone, "Enter a valid phone number or email"),
-    issueType: z.enum(ISSUE_TYPES, { error: "Choose what happened" }),
+    issueType: issueTypeKey("Choose what happened"),
     issueDate: isoDate,
     description: optionalText(2000),
     source: z.enum(["web", "qr"]).optional().default("web"),

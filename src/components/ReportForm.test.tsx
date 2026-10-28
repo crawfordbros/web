@@ -9,10 +9,21 @@ import { ReportForm } from "./ReportForm";
 
 vi.mock("../lib/api", async (orig) => {
   const actual = await orig<typeof import("../lib/api")>();
+  const { ISSUE_TYPES, ISSUE_TYPE_LABELS } = await import("../lib/schemas");
   return {
     ...actual,
     getProperties: vi.fn(async () => [{ name: "Demo Community", slug: "demo-community" }]),
     submitResidentReport: vi.fn(async () => ({ refNo: 1001, token: "a".repeat(36) })),
+    // The saved list from Admin → Settings: the original types plus one CBES added.
+    getPublicSettings: vi.fn(async () => ({
+      issueTypes: [
+        ...ISSUE_TYPES.map((key) => ({ key, label: ISSUE_TYPE_LABELS[key], labelEs: null })),
+        { key: "gate_code", label: "Gate code not working", labelEs: null },
+      ],
+      serviceNights: ["sun", "mon", "tue", "wed", "thu"],
+      startTime: "20:00",
+      holidays: [],
+    })),
   };
 });
 const api = await import("../lib/api");
@@ -53,6 +64,12 @@ describe("ReportForm", () => {
     finish([{ name: "Demo Community", slug: "demo-community" }]);
     await screen.findByRole("option", { name: "Demo Community" });
     expect(screen.getByText("Enter your building and unit")).toBeInTheDocument();
+  });
+
+  it("offers the issue types saved in Admin → Settings, including a ?type= link to a new one", async () => {
+    renderForm("/report?type=gate_code");
+    expect(await screen.findByRole("radio", { name: "Gate code not working" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Missed pickup" })).not.toBeChecked();
   });
 
   it("pre-fills community and unit from a QR link and marks the source", async () => {

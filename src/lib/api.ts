@@ -1,4 +1,4 @@
-import type { IssueType, QuoteInput, ReportStatus, ResidentReportInput } from "./schemas";
+import type { QuoteInput, ReportStatus, ResidentReportInput } from "./schemas";
 
 export class ApiError extends Error {
   constructor(
@@ -44,7 +44,7 @@ export type ReportStatusResponse = {
   refNo: number;
   status: ReportStatus;
   statusLabel: string;
-  issueType: IssueType;
+  issueType: string;
   issueLabel: string;
   community: string;
   unit: string | null;
@@ -52,6 +52,19 @@ export type ReportStatusResponse = {
   firstResponseAt: string | null;
   resolvedAt: string | null;
 };
+
+export type Day = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+/** What CBES sets in Admin → Settings: the report form's issue types and the service calendar. */
+export type PublicSettings = {
+  issueTypes: { key: string; label: string; labelEs: string | null }[];
+  serviceNights: Day[];
+  startTime: string;
+  holidays: { date: string; name: string }[];
+};
+
+export function getPublicSettings() {
+  return request<PublicSettings>("/api/settings/public");
+}
 
 export function getReportStatus(token: string) {
   return request<ReportStatusResponse>(`/api/resident-reports/${encodeURIComponent(token)}`);

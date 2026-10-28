@@ -5,13 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, getProperties, submitResidentReport } from "../lib/api";
 import { compressPhoto } from "../lib/images";
+import { DEFAULT_ISSUE_TYPES, usePublicSettings } from "../lib/schedule";
 import {
-  ISSUE_TYPES,
-  ISSUE_TYPE_LABELS,
   OTHER_COMMUNITY,
   PHOTO_LIMITS,
   residentReportSchema,
-  type IssueType,
   type ResidentReport,
   type ResidentReportInput,
 } from "../lib/schemas";
@@ -118,6 +116,12 @@ function Submitted({ refNo, token }: { refNo: number; token: string }) {
   );
 }
 
+/** The ?type= from a link when it's on the form, else Missed pickup (or the first type). */
+function presetIssueType(keys: string[], preset: string | null): string {
+  if (preset && keys.includes(preset)) return preset;
+  return keys.includes("missed_pickup") ? "missed_pickup" : keys[0];
+}
+
 export function ReportForm({ className }: { className?: string }) {
   const [params] = useSearchParams();
   const qrProperty = params.get("p") ?? "";
@@ -125,6 +129,10 @@ export function ReportForm({ className }: { className?: string }) {
   const presetType = params.get("type");
 
   const properties = useQuery({ queryKey: ["properties"], queryFn: getProperties, staleTime: 5 * 60_000 });
+  const settings = usePublicSettings();
+  const issueTypes = settings?.issueTypes.length ? settings.issueTypes : DEFAULT_ISSUE_TYPES;
+  // A string, so the form defaults below only recompute when the list itself changes.
+  const keyList = issueTypes.map((t) => t.key).join(",");
 
   const defaults = useMemo<ResidentReportInput>(
     () => ({
@@ -134,12 +142,12 @@ export function ReportForm({ className }: { className?: string }) {
       unitCode: qrUnit,
       reporterName: "",
       reporterContact: "",
-      issueType: (ISSUE_TYPES as readonly string[]).includes(presetType ?? "") ? (presetType as IssueType) : "missed_pickup",
+      issueType: presetIssueType(keyList.split(","), presetType),
       issueDate: todayIso(),
       description: "",
       source: qrProperty || qrUnit ? "qr" : "web",
     }),
-    [qrProperty, qrUnit, presetType],
+    [qrProperty, qrUnit, presetType, keyList],
   );
 
   const {
@@ -154,8 +162,8 @@ export function ReportForm({ className }: { className?: string }) {
     defaultValues: defaults,
   });
 
-  // Re-apply defaults once the community list arrives so a QR pre-fill selects its option. Keep any
-  // errors from a submit that beat the list, so they don't vanish.
+  // Re-apply defaults once the community list (or the saved issue types) arrives so a QR pre-fill
+  // selects its option. Keep any errors from a submit that beat the list, so they don't vanish.
   useEffect(() => {
     if (properties.data) reset(defaults, { keepDirtyValues: true, keepErrors: true, keepIsSubmitted: true });
   }, [properties.data, defaults, reset]);
@@ -248,8 +256,8 @@ export function ReportForm({ className }: { className?: string }) {
       />
 
       <ChoiceGroup legend="What happened?" error={errors.issueType?.message} className="sm:col-span-2">
-        {ISSUE_TYPES.map((t) => (
-          <Choice key={t} type="radio" value={t} label={ISSUE_TYPE_LABELS[t]} {...register("issueType")} />
+        {issueTypes.map((t) => (
+          <Choice key={t.key} type="radio" value={t.key} label={t.label} {...register("issueType")} />
         ))}
       </ChoiceGroup>
 

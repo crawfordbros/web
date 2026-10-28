@@ -1,7 +1,20 @@
 import { Link } from "react-router-dom";
 import { business } from "../config";
 import { useSeo } from "../lib/seo";
+import { holidaysPhrase, nightsPhrase, timePhrase, upcomingHolidays, usePublicSettings } from "../lib/schedule";
 import { ButtonLink, Container, Pending } from "../components/ui";
+
+/** Service nights, start time and holidays from Admin → Settings, with the usual calendar until they load. */
+function useSchedule() {
+  const settings = usePublicSettings();
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const nights = settings ? nightsPhrase(settings.serviceNights) : "";
+  return {
+    nights: nights || "Sunday to Thursday",
+    start: settings ? timePhrase(settings.startTime) : "8 PM",
+    holidays: settings ? upcomingHolidays(settings.holidays, today) : business.holidays,
+  };
+}
 
 export function ResidentsPage() {
   useSeo({
@@ -11,9 +24,11 @@ export function ResidentsPage() {
     path: "/residents",
   });
 
+  const schedule = useSchedule();
+  const nightsLabel = schedule.nights.charAt(0).toUpperCase() + schedule.nights.slice(1);
   const rules = [
     [<strong key="s">Bag it and tie it.</strong>, " Loose trash can't be collected."],
-    [<strong key="s">Container out by 8 PM,</strong>, " Sunday to Thursday."],
+    [<strong key="s">Container out by {schedule.start},</strong>, ` ${nightsLabel}.`],
     [<strong key="s">Bags fit inside with the lid closed.</strong>, " Nothing next to the container or in the breezeway."],
     [<strong key="s">Break down boxes</strong>, " and take them to the trash area yourself."],
     [<strong key="s">No hazardous items, liquids or furniture</strong>, " at the door. Book a bulk pickup instead."],
@@ -67,10 +82,12 @@ export function ResidentsPage() {
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-line p-6">
             <h3 className="mt-0 mb-2 text-xl">Service nights</h3>
-            <p className="mt-0 mb-2 font-bold">Sunday to Thursday, from 8 PM</p>
-            <p className="m-0 text-[15px] leading-relaxed text-muted">
-              No service on {business.holidays.slice(0, -1).join(", ")} and {business.holidays.at(-1)}.
+            <p className="mt-0 mb-2 font-bold">
+              {nightsLabel}, from {schedule.start}
             </p>
+            {schedule.holidays.length > 0 && (
+              <p className="m-0 text-[15px] leading-relaxed text-muted">No service on {holidaysPhrase(schedule.holidays)}.</p>
+            )}
           </div>
           <div className="rounded-xl border border-line p-6">
             <h3 className="mt-0 mb-2 text-xl">Bulk pickup</h3>
