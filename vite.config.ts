@@ -2,8 +2,6 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const API_DEV_URL = process.env.CBES_API_DEV_URL ?? "http://localhost:8787";
-
 /** Builds require values from .env.local locally or Render environment variables in production. */
 function requireEnv(names: string[]): Plugin {
   return {
@@ -40,7 +38,8 @@ function robots(): Plugin {
 }
 
 // Local development: http://test.cbenvironments.com:5173 (see README for the DNS or hosts entry).
-// /api is proxied to the cbes-api Worker running with `pnpm dev` in that repo.
+// Test and local previews share staging. Only isolated E2E tests use a local Worker.
+// Production /api requests are routed to the production Worker by Cloudflare.
 export default defineConfig(({ mode }) => ({
   // Refuse to ship forms that can never pass the spam check.
   plugins: [react(), tailwindcss(), robots(), requireEnv(["VITE_TURNSTILE_SITE_KEY"])],
@@ -51,11 +50,11 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     allowedHosts: ["test.cbenvironments.com", "localhost"],
     ws: mode === "tunnel" ? { protocol: "wss", host: "test.cbenvironments.com", clientPort: 443 } : undefined,
-    proxy: { "/api": { target: API_DEV_URL } },
+    proxy: { "/api": { target: mode === "e2e" ? "http://127.0.0.1:8787" : "https://staging-api.cbenvironments.com", changeOrigin: true } },
   },
   preview: {
     port: 4173,
     allowedHosts: ["test.cbenvironments.com", "localhost"],
-    proxy: { "/api": { target: API_DEV_URL } },
+    proxy: { "/api": { target: mode === "e2e" ? "http://127.0.0.1:8787" : "https://staging-api.cbenvironments.com", changeOrigin: true } },
   },
 }));

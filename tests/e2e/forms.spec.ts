@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+// These tests create records. Refuse to submit through a server connected to shared data.
+test.beforeAll(async ({ request }) => {
+  const health = await request.get("/api/health");
+  expect(health.ok(), "Form tests require the isolated local API (--mode e2e).").toBe(true);
+  expect(await health.json()).toEqual({ ok: true, environment: "local" });
+});
+
 // 1x1 PNG, to exercise the photo upload path.
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",

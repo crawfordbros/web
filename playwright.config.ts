@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// End-to-end tests run the real stack: this site's Vite dev server plus the cbes-api Worker
-// (with its local D1 and R2) from the sibling checkout. Override with CBES_API_DIR.
+// Form-submission tests use isolated local D1/R2, never the shared staging API.
+// Use a separate frontend port so a running test/tunnel server cannot be reused accidentally.
 const apiDir = process.env.CBES_API_DIR ?? "../api";
-// Set E2E_BASE_URL (e.g. http://localhost:4173 after `pnpm build && pnpm preview`) to test the prerendered build.
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
+// For built pages, start `pnpm preview --mode e2e --host 127.0.0.1 --port 4183` first.
+const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5183";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -26,11 +26,11 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
     },
-    {
-      command: "pnpm dev",
-      url: "http://localhost:5173",
-      reuseExistingServer: true,
+    ...(!process.env.E2E_BASE_URL ? [{
+      command: "pnpm dev --mode e2e --host 127.0.0.1 --port 5183",
+      url: "http://127.0.0.1:5183",
+      reuseExistingServer: false,
       timeout: 60_000,
-    },
+    }] : []),
   ],
 });
