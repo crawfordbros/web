@@ -13,11 +13,9 @@ import {
   type ResidentReportInput,
 } from "../lib/schemas";
 import { Choice, ChoiceGroup, FormAlert, TextArea, TextField } from "./fields";
-import { useArmed } from "./useArmed";
 import { useHydrated } from "./useHydrated";
 import { TurnstileField, type TurnstileInstance } from "./TurnstileField";
 import { turnstileRequired } from "../config";
-import { resolveTurnstileToken } from "../lib/turnstile";
 import { Button } from "./ui";
 import { cx } from "./styles";
 
@@ -193,11 +191,16 @@ export function ReportForm({ className }: { className?: string }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [photoError, setPhotoError] = useState<string>();
   const [token, setToken] = useState("");
+  const [verificationUnavailable, setVerificationUnavailable] = useState(false);
   const [formError, setFormError] = useState<string>();
   const [done, setDone] = useState<{ refNo: number; token: string }>();
   const turnstile = useRef<TurnstileInstance>(null);
-  const { armed, armProps } = useArmed();
   const hydrated = useHydrated();
+  const browserVerified = !turnstileRequired || Boolean(token);
+  const onVerificationToken = (value: string) => {
+    setToken(value);
+    setVerificationUnavailable(false);
+  };
 
   const propertySlug = useWatch({ control, name: "propertySlug" });
   const typingCommunity = propertySlug === OTHER_COMMUNITY;
@@ -210,11 +213,11 @@ export function ReportForm({ className }: { className?: string }) {
     focusCommunity.current = true;
   };
   useEffect(() => {
-    if (typingCommunity && focusCommunity.current) {
+    if (typingCommunity && focusCommunity.current && browserVerified) {
       focusCommunity.current = false;
       setFocus("communityText");
     }
-  }, [typingCommunity, setFocus]);
+  }, [typingCommunity, browserVerified, setFocus]);
 
   // "Can we call you?" opens a phone field; closing it drops the number so we never call someone who backed out.
   const wantsCall = useWatch({ control, name: "wantsCall" });
@@ -238,9 +241,9 @@ export function ReportForm({ className }: { className?: string }) {
   const submitReport = async (data: ResidentReport) => {
     setFormError(undefined);
     setPhotoError(undefined);
-    const turnstileToken = await resolveTurnstileToken(turnstile, token);
+    const turnstileToken = token;
     if (turnstileRequired && !turnstileToken) {
-      setFormError("Please complete the spam check above the Submit button.");
+      setFormError("Please complete the browser check at the top of the form.");
       return;
     }
     try {
@@ -270,102 +273,130 @@ export function ReportForm({ className }: { className?: string }) {
   return (
     <form
       noValidate
-      {...armProps}
       onSubmit={onSubmit}
       aria-label="Report an issue"
       className={cx(
-        "grid grid-cols-1 gap-5 rounded-2xl border border-line bg-white p-5 sm:grid-cols-2 sm:p-8",
+        "flex flex-col gap-5 rounded-2xl border border-line bg-white p-5 sm:p-8",
         className,
       )}
     >
-      {typingCommunity ? (
-        <TextField
-          label="Community"
-          placeholder="Your apartment community's name"
-          error={errors.communityText?.message}
-          {...register("communityText")}
-        />
-      ) : (
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-sm font-semibold" id="community-label">
-            Community
-          </span>
-          <div
-            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-line bg-tint px-3"
-            aria-labelledby="community-label"
-            role="group"
-          >
-            <span className="text-ink">Filled in from your QR code</span>
-            <TextButton onClick={() => typeCommunityInstead()} className="self-center">
-              Change
-            </TextButton>
+      {turnstileRequired && (
+        <div className="flex flex-col gap-3 rounded-xl border border-line bg-tint p-4">
+          <div role="status" aria-live="polite">
+            <p className="m-0 font-semibold text-navy">
+              {browserVerified ? "Browser verified" : verificationUnavailable ? "Browser check unavailable" : "Checking your browser…"}
+            </p>
+            <p className="mt-1 mb-0 text-sm text-muted">
+              {browserVerified
+                ? "You can now fill out and submit your report."
+                : verificationUnavailable
+                  ? "Please retry the check below. If it doesn't load, refresh this page or email office@cbenvironments.com."
+                  : "Complete the check below to report an issue. This helps prevent automated spam."}
+            </p>
           </div>
+          <TurnstileField
+            ref={turnstile}
+            action="resident_report"
+            armed={hydrated}
+            onToken={onVerificationToken}
+            onUnavailable={() => setVerificationUnavailable(true)}
+          />
+          <noscript>Enable JavaScript to complete the browser check, or email office@cbenvironments.com.</noscript>
         </div>
       )}
-      <TextField
-        label="Building and unit"
-        placeholder="e.g. Bldg 4, Unit 412"
-        error={errors.unitText?.message}
-        {...register("unitText")}
-      />
-      <TextField label="Your name" autoComplete="name" error={errors.reporterName?.message} {...register("reporterName")} />
-      <div className="flex min-w-0 flex-col">
-        <TextField
-          label="Email"
-          type="email"
-          autoComplete="email"
-          hint="We send your confirmation and status link here."
-          error={errors.reporterEmail?.message}
-          {...register("reporterEmail")}
-        />
-        {wantsCall ? (
-          <div className="mt-3 flex flex-col">
-            <TextField
-              label="Phone number"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              hint="We only call about this report."
-              error={errors.reporterPhone?.message}
-              {...register("reporterPhone")}
-            />
-            <TextButton onClick={() => setCall(false)}>Don't call me</TextButton>
-          </div>
+      <fieldset
+        disabled={!hydrated || !browserVerified}
+        className="m-0 grid min-w-0 grid-cols-1 gap-5 border-0 p-0 sm:grid-cols-2"
+      >
+        <legend className="sr-only">Report details</legend>
+        {typingCommunity ? (
+          <TextField
+            label="Community"
+            placeholder="Your apartment community's name"
+            error={errors.communityText?.message}
+            {...register("communityText")}
+          />
         ) : (
-          <TextButton ref={callToggle} onClick={() => setCall(true)}>
-            Can we call you?
-          </TextButton>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-sm font-semibold" id="community-label">
+              Community
+            </span>
+            <div
+              className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-line bg-tint px-3"
+              aria-labelledby="community-label"
+              role="group"
+            >
+              <span className="text-ink">Filled in from your QR code</span>
+              <TextButton onClick={() => typeCommunityInstead()} className="self-center">
+                Change
+              </TextButton>
+            </div>
+          </div>
         )}
-      </div>
+        <TextField
+          label="Building and unit"
+          placeholder="e.g. Bldg 4, Unit 412"
+          error={errors.unitText?.message}
+          {...register("unitText")}
+        />
+        <TextField label="Your name" autoComplete="name" error={errors.reporterName?.message} {...register("reporterName")} />
+        <div className="flex min-w-0 flex-col">
+          <TextField
+            label="Email"
+            type="email"
+            autoComplete="email"
+            hint="We send your confirmation and status link here."
+            error={errors.reporterEmail?.message}
+            {...register("reporterEmail")}
+          />
+          {wantsCall ? (
+            <div className="mt-3 flex flex-col">
+              <TextField
+                label="Phone number"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                hint="We only call about this report."
+                error={errors.reporterPhone?.message}
+                {...register("reporterPhone")}
+              />
+              <TextButton onClick={() => setCall(false)}>Don't call me</TextButton>
+            </div>
+          ) : (
+            <TextButton ref={callToggle} onClick={() => setCall(true)}>
+              Can we call you?
+            </TextButton>
+          )}
+        </div>
 
-      <ChoiceGroup legend="What happened?" error={errors.issueType?.message} className="sm:col-span-2">
-        {issueTypes.map((t) => (
-          <Choice key={t.key} type="radio" value={t.key} label={t.label} {...register("issueType")} />
-        ))}
-      </ChoiceGroup>
+        <ChoiceGroup legend="What happened?" error={errors.issueType?.message} className="sm:col-span-2">
+          {issueTypes.map((t) => (
+            <Choice key={t.key} type="radio" value={t.key} label={t.label} {...register("issueType")} />
+          ))}
+        </ChoiceGroup>
 
-      <TextField
-        label="Date of issue"
-        type="date"
-        // Set only in the browser: prerendered HTML would freeze the limit at the build date.
-        max={hydrated ? todayIso() : undefined}
-        error={errors.issueDate?.message}
-        {...register("issueDate")}
-      />
+        <TextField
+          label="Date of issue"
+          type="date"
+          // Set only in the browser: prerendered HTML would freeze the limit at the build date.
+          max={hydrated ? todayIso() : undefined}
+          error={errors.issueDate?.message}
+          {...register("issueDate")}
+        />
 
-      <PhotoPicker photos={photos} onChange={setPhotos} error={photoError} />
+        <PhotoPicker photos={photos} onChange={setPhotos} error={photoError} />
 
-      <TextArea
-        label="Tell us more"
-        className="sm:col-span-2"
-        error={errors.description?.message}
-        {...register("description")}
-      />
+        <TextArea
+          label="Tell us more"
+          className="sm:col-span-2"
+          error={errors.description?.message}
+          {...register("description")}
+        />
+      </fieldset>
 
-      <div className="flex flex-col gap-4 sm:col-span-2">
-        <TurnstileField ref={turnstile} action="resident_report" armed={armed} onToken={setToken} />
+      <div className="flex flex-col gap-4">
         {formError && <FormAlert>{formError}</FormAlert>}
-        <Button type="submit" disabled={isSubmitting || !hydrated} className="w-full sm:w-auto sm:justify-self-start">
+        <Button type="submit" disabled={isSubmitting || !hydrated || !browserVerified} className="w-full sm:w-auto sm:self-start">
           {isSubmitting ? "Sending…" : "Submit report"}
         </Button>
       </div>

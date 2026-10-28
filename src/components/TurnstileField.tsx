@@ -8,6 +8,7 @@ type TurnstileFieldProps = {
   action: "contact" | "quote" | "resident_report";
   armed: boolean;
   onToken: (token: string) => void;
+  onUnavailable?: () => void;
 };
 
 /**
@@ -16,8 +17,12 @@ type TurnstileFieldProps = {
  * submit button never moves under a visitor's finger.
  */
 export const TurnstileField = forwardRef<TurnstileInstance, TurnstileFieldProps>(
-  function TurnstileField({ action, armed, onToken }, ref) {
+  function TurnstileField({ action, armed, onToken, onUnavailable }, ref) {
     if (!config.turnstileSiteKey) return null;
+    const unavailable = () => {
+      onToken("");
+      onUnavailable?.();
+    };
     return (
       <div className="min-h-[65px]">
         {armed && (
@@ -25,10 +30,12 @@ export const TurnstileField = forwardRef<TurnstileInstance, TurnstileFieldProps>
             ref={ref}
             siteKey={config.turnstileSiteKey}
             options={{ action, size: "flexible", theme: "light" }}
+            scriptOptions={{ onError: unavailable }}
             onSuccess={onToken}
             onExpire={() => onToken("")}
-            onError={() => onToken("")}
-            onTimeout={() => onToken("")}
+            onError={unavailable}
+            onTimeout={unavailable}
+            onUnsupported={unavailable}
           />
         )}
       </div>

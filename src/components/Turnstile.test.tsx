@@ -7,7 +7,7 @@ import { ContactForm } from "./ContactForm";
 import { QuoteForm } from "./QuoteForm";
 import { ReportForm } from "./ReportForm";
 import { TurnstileField } from "./TurnstileField";
-import { ApiError, submitQuote } from "../lib/api";
+import { ApiError, submitQuote, submitResidentReport } from "../lib/api";
 
 const widget = vi.hoisted(() => ({
   reset: vi.fn(),
@@ -15,6 +15,8 @@ const widget = vi.hoisted(() => ({
   onExpire: undefined as undefined | (() => void),
   onError: undefined as undefined | (() => void),
   onTimeout: undefined as undefined | (() => void),
+  onScriptError: undefined as undefined | (() => void),
+  onUnsupported: undefined as undefined | (() => void),
 }));
 
 vi.mock("../config", async (original) => {
@@ -31,6 +33,8 @@ vi.mock("@marsidev/react-turnstile", async () => {
     onExpire: () => void;
     onError: () => void;
     onTimeout: () => void;
+    scriptOptions: { onError: () => void };
+    onUnsupported: () => void;
   };
   return {
     Turnstile: forwardRef(function MockTurnstile(props: Props, ref) {
@@ -38,6 +42,8 @@ vi.mock("@marsidev/react-turnstile", async () => {
       widget.onExpire = props.onExpire;
       widget.onError = props.onError;
       widget.onTimeout = props.onTimeout;
+      widget.onScriptError = props.scriptOptions.onError;
+      widget.onUnsupported = props.onUnsupported;
       return <button type="button" data-sitekey={props.siteKey} onClick={() => props.onSuccess("fresh-token")}>Verify {props.options.action}</button>;
     }),
   };
@@ -48,6 +54,8 @@ vi.mock("../lib/api", async (original) => {
   return {
     ...actual,
     submitQuote: vi.fn(async () => ({ ok: true })),
+    submitResidentReport: vi.fn(async () => ({ refNo: 1001, token: "a".repeat(36) })),
+    getPublicSettings: vi.fn(async () => ({ issueTypes: [], serviceNights: [], startTime: "20:00", holidays: [] })),
   };
 });
 
@@ -71,16 +79,75 @@ async function fillContact() {
   await userEvent.type(screen.getByLabelText("Message"), "Question about pickup");
 }
 
+async function fillReport() {
+  renderForm(<ReportForm />);
+  await userEvent.click(screen.getByRole("button", { name: "Verify resident_report" }));
+  await userEvent.type(screen.getByLabelText("Community"), "Maple Ridge");
+  await userEvent.type(screen.getByLabelText("Building and unit"), "Unit 412");
+  await userEvent.type(screen.getByLabelText("Your name"), "Sam");
+  await userEvent.type(screen.getByLabelText("Email"), "sam@example.com");
+  await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
+}
+
 describe("Turnstile integration", () => {
   it.each([
     { form: <ContactForm />, label: "Contact us", action: "contact" },
     { form: <QuoteForm />, label: "Request a quote", action: "quote" },
-    { form: <ReportForm />, label: "Report an issue", action: "resident_report" },
   ])("uses the $action action and mounts only after interaction", async ({ form, label, action }) => {
     renderForm(form);
     expect(screen.queryByRole("button", { name: `Verify ${action}` })).not.toBeInTheDocument();
     fireEvent.focus(screen.getByRole("form", { name: label }));
     expect(await screen.findByRole("button", { name: `Verify ${action}` })).toHaveAttribute("data-sitekey", "test-site-key");
+  });
+
+  it("starts the report browser check immediately and unlocks reporting only after success", async () => {
+    renderForm(<ReportForm />);
+    expect(screen.getByText("Checking your browser…")).toBeInTheDocument();
+    expect(screen.getByLabelText("Community")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+    const verify = screen.getByRole("button", { name: "Verify resident_report" });
+    expect(verify).toHaveAttribute("data-sitekey", "test-site-key");
+    await userEvent.click(verify);
+    expect(screen.getByText("Browser verified")).toBeInTheDocument();
+    expect(screen.getByLabelText("Community")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Submit report" })).toBeEnabled();
+  });
+
+  it.each(["onExpire", "onError", "onTimeout", "onScriptError", "onUnsupported"] as const)(
+    "blocks reporting on %s, retains entered details and accepts a fresh verification", async (callback) => {
+      await fillReport();
+      act(() => widget[callback]?.());
+      expect(screen.getByLabelText("Community")).toBeDisabled();
+      expect(screen.getByLabelText("Community")).toHaveValue("Maple Ridge");
+      expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+      expect(screen.getByText(callback === "onExpire" ? "Checking your browser…" : "Browser check unavailable")).toBeInTheDocument();
+
+      // Bypassing the disabled button must not reuse the previous token.
+      fireEvent.submit(screen.getByRole("form", { name: "Report an issue" }));
+      expect(await screen.findByText("Please complete the browser check at the top of the form.")).toBeInTheDocument();
+      expect(submitResidentReport).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole("button", { name: "Verify resident_report" }));
+      await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+      expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();
+      expect(submitResidentReport).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ communityText: "Maple Ridge", description: "Bags left by the door." }), [], "fresh-token",
+      );
+    },
+  );
+
+  it("requires a new browser check after a failed report submission", async () => {
+    vi.mocked(submitResidentReport).mockRejectedValueOnce(new ApiError("Try again", 503));
+    await fillReport();
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    expect(await screen.findByText("Try again")).toBeInTheDocument();
+    expect(widget.reset).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+    expect(screen.getByLabelText("Community")).toHaveValue("Maple Ridge");
+
+    await userEvent.click(screen.getByRole("button", { name: "Verify resident_report" }));
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();
   });
 
   it.each(["onExpire", "onError", "onTimeout"] as const)("clears a stale token on %s", async (callback) => {
