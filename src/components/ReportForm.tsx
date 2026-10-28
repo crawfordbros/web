@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ComponentPropsWithoutRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ApiError, getProperties, submitResidentReport } from "../lib/api";
+import { ApiError, submitResidentReport } from "../lib/api";
 import { compressPhoto } from "../lib/images";
 import { DEFAULT_ISSUE_TYPES, usePublicSettings } from "../lib/schedule";
 import {
@@ -13,7 +12,7 @@ import {
   type ResidentReport,
   type ResidentReportInput,
 } from "../lib/schemas";
-import { Choice, ChoiceGroup, FormAlert, SelectField, TextArea, TextField } from "./fields";
+import { Choice, ChoiceGroup, FormAlert, TextArea, TextField } from "./fields";
 import { useArmed } from "./useArmed";
 import { useHydrated } from "./useHydrated";
 import { TurnstileField, type TurnstileInstance } from "./TurnstileField";
@@ -94,6 +93,24 @@ function PhotoPicker({ photos, onChange, error }: { photos: Photo[]; onChange: (
   );
 }
 
+/** A quiet, link-styled button for small in-form choices (swap the community, add or drop a phone number). */
+const TextButton = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<"button">>(function TextButton(
+  { className, ...props },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={cx(
+        "inline-flex min-h-11 shrink-0 cursor-pointer items-center self-start bg-transparent px-0 text-sm font-semibold text-navy underline underline-offset-2 hover:text-navy-dark focus-visible:rounded focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
+        className,
+      )}
+      {...props}
+    />
+  );
+});
+
 function Submitted({ refNo, token }: { refNo: number; token: string }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
@@ -128,7 +145,6 @@ export function ReportForm({ className }: { className?: string }) {
   const qrUnit = params.get("u") ?? "";
   const presetType = params.get("type");
 
-  const properties = useQuery({ queryKey: ["properties"], queryFn: getProperties, staleTime: 5 * 60_000 });
   const settings = usePublicSettings();
   const issueTypes = settings?.issueTypes.length ? settings.issueTypes : DEFAULT_ISSUE_TYPES;
   // A string, so the form defaults below only recompute when the list itself changes.
@@ -136,12 +152,15 @@ export function ReportForm({ className }: { className?: string }) {
 
   const defaults = useMemo<ResidentReportInput>(
     () => ({
-      propertySlug: qrProperty,
+      // Residents type their community; only a QR link carries a property slug. We don't list the communities we serve.
+      propertySlug: qrProperty || OTHER_COMMUNITY,
       communityText: "",
       unitText: qrUnit ? `Unit ${qrUnit}` : "",
       unitCode: qrUnit,
       reporterName: "",
-      reporterContact: "",
+      reporterEmail: "",
+      wantsCall: false,
+      reporterPhone: "",
       issueType: presetIssueType(keyList.split(","), presetType),
       issueDate: todayIso(),
       description: "",
@@ -155,6 +174,9 @@ export function ReportForm({ className }: { className?: string }) {
     handleSubmit,
     control,
     setError,
+    clearErrors,
+    setValue,
+    setFocus,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ResidentReportInput, unknown, ResidentReport>({
@@ -162,11 +184,11 @@ export function ReportForm({ className }: { className?: string }) {
     defaultValues: defaults,
   });
 
-  // Re-apply defaults once the community list (or the saved issue types) arrives so a QR pre-fill
-  // selects its option. Keep any errors from a submit that beat the list, so they don't vanish.
+  // Re-apply defaults once the saved issue types arrive so a ?type= link selects its option.
+  // Keep any errors from a submit that beat the list, so they don't vanish.
   useEffect(() => {
-    if (properties.data) reset(defaults, { keepDirtyValues: true, keepErrors: true, keepIsSubmitted: true });
-  }, [properties.data, defaults, reset]);
+    reset(defaults, { keepDirtyValues: true, keepErrors: true, keepIsSubmitted: true });
+  }, [defaults, reset]);
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [photoError, setPhotoError] = useState<string>();
@@ -178,7 +200,40 @@ export function ReportForm({ className }: { className?: string }) {
   const hydrated = useHydrated();
 
   const propertySlug = useWatch({ control, name: "propertySlug" });
-  const issueType = useWatch({ control, name: "issueType" });
+  const typingCommunity = propertySlug === OTHER_COMMUNITY;
+
+  // Swap the QR community for a typed one: the resident asked to change it, or the server didn't recognize the code.
+  const focusCommunity = useRef(false);
+  const typeCommunityInstead = (message?: string) => {
+    setValue("propertySlug", OTHER_COMMUNITY, { shouldDirty: true });
+    if (message) setError("communityText", { message });
+    focusCommunity.current = true;
+  };
+  useEffect(() => {
+    if (typingCommunity && focusCommunity.current) {
+      focusCommunity.current = false;
+      setFocus("communityText");
+    }
+  }, [typingCommunity, setFocus]);
+
+  // "Can we call you?" opens a phone field; closing it drops the number so we never call someone who backed out.
+  const wantsCall = useWatch({ control, name: "wantsCall" });
+  const callToggle = useRef<HTMLButtonElement>(null);
+  const callMoved = useRef(false);
+  const setCall = (on: boolean) => {
+    setValue("wantsCall", on, { shouldDirty: true });
+    if (!on) {
+      setValue("reporterPhone", "", { shouldDirty: true });
+      clearErrors("reporterPhone");
+    }
+    callMoved.current = true;
+  };
+  useEffect(() => {
+    if (!callMoved.current) return;
+    callMoved.current = false;
+    if (wantsCall) setFocus("reporterPhone");
+    else callToggle.current?.focus();
+  }, [wantsCall, setFocus]);
 
   const submitReport = async (data: ResidentReport) => {
     setFormError(undefined);
@@ -200,6 +255,7 @@ export function ReportForm({ className }: { className?: string }) {
       const e = err instanceof ApiError ? err : new ApiError("Something went wrong. Please try again.", 0);
       for (const [field, message] of Object.entries(e.fieldErrors)) {
         if (field === "photos") setPhotoError(message);
+        else if (field === "propertySlug") typeCommunityInstead(message);
         else setError(field as keyof ResidentReportInput, { message });
       }
       setFormError(e.message);
@@ -222,22 +278,29 @@ export function ReportForm({ className }: { className?: string }) {
         className,
       )}
     >
-      <SelectField label="Community" error={errors.propertySlug?.message} {...register("propertySlug")}>
-        <option value="">{properties.isLoading ? "Loading communities…" : "Select…"}</option>
-        {properties.data?.map((p) => (
-          <option key={p.slug} value={p.slug}>
-            {p.name}
-          </option>
-        ))}
-        <option value={OTHER_COMMUNITY}>My community isn't listed</option>
-      </SelectField>
-      {propertySlug === OTHER_COMMUNITY && (
+      {typingCommunity ? (
         <TextField
-          label="Community name"
-          placeholder="Type your community name"
+          label="Community"
+          placeholder="Your apartment community's name"
           error={errors.communityText?.message}
           {...register("communityText")}
         />
+      ) : (
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="text-sm font-semibold" id="community-label">
+            Community
+          </span>
+          <div
+            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-line bg-tint px-3"
+            aria-labelledby="community-label"
+            role="group"
+          >
+            <span className="text-ink">Filled in from your QR code</span>
+            <TextButton onClick={() => typeCommunityInstead()} className="self-center">
+              Change
+            </TextButton>
+          </div>
+        </div>
       )}
       <TextField
         label="Building and unit"
@@ -246,14 +309,34 @@ export function ReportForm({ className }: { className?: string }) {
         {...register("unitText")}
       />
       <TextField label="Your name" autoComplete="name" error={errors.reporterName?.message} {...register("reporterName")} />
-      <TextField
-        label="Phone or email"
-        autoComplete="email"
-        inputMode="email"
-        hint="We send your confirmation and status link here."
-        error={errors.reporterContact?.message}
-        {...register("reporterContact")}
-      />
+      <div className="flex min-w-0 flex-col">
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          hint="We send your confirmation and status link here."
+          error={errors.reporterEmail?.message}
+          {...register("reporterEmail")}
+        />
+        {wantsCall ? (
+          <div className="mt-3 flex flex-col">
+            <TextField
+              label="Phone number"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              hint="We only call about this report."
+              error={errors.reporterPhone?.message}
+              {...register("reporterPhone")}
+            />
+            <TextButton onClick={() => setCall(false)}>Don't call me</TextButton>
+          </div>
+        ) : (
+          <TextButton ref={callToggle} onClick={() => setCall(true)}>
+            Can we call you?
+          </TextButton>
+        )}
+      </div>
 
       <ChoiceGroup legend="What happened?" error={errors.issueType?.message} className="sm:col-span-2">
         {issueTypes.map((t) => (
@@ -274,7 +357,6 @@ export function ReportForm({ className }: { className?: string }) {
 
       <TextArea
         label="Tell us more"
-        optional={issueType !== "other"}
         className="sm:col-span-2"
         error={errors.description?.message}
         {...register("description")}

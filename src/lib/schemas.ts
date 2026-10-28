@@ -73,14 +73,13 @@ export const OTHER_COMMUNITY = "other";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function contactMethodFor(contact: string): "email" | "phone" {
-  return contact.includes("@") ? "email" : "phone";
+function isPhone(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  return /^[\d\s().+-]+$/.test(value) && digits.length >= 10 && digits.length <= 15;
 }
 
 function isEmailOrPhone(value: string): boolean {
-  if (EMAIL_RE.test(value)) return true;
-  const digits = value.replace(/\D/g, "");
-  return /^[\d\s().+-]+$/.test(value) && digits.length >= 10 && digits.length <= 15;
+  return EMAIL_RE.test(value) || isPhone(value);
 }
 
 const optionalText = (max: number) =>
@@ -105,23 +104,27 @@ export const residentReportSchema = z
     unitText: z.string().trim().min(1, "Enter your building and unit").max(60),
     unitCode: optionalText(20),
     reporterName: z.string().trim().min(1, "Enter your name").max(100),
-    reporterContact: z
+    reporterEmail: z.string().trim().min(1, "Enter your email").max(120).regex(EMAIL_RE, "Enter a valid email"),
+    /** Set when the resident opened "Can we call you?"; the phone number is then required. */
+    wantsCall: z.boolean().optional().default(false),
+    reporterPhone: optionalText(30),
+    issueType: issueTypeKey("Choose what happened"),
+    issueDate: z
       .string()
       .trim()
-      .min(1, "Enter a phone number or email")
-      .max(120)
-      .refine(isEmailOrPhone, "Enter a valid phone number or email"),
-    issueType: issueTypeKey("Choose what happened"),
-    issueDate: isoDate,
-    description: optionalText(2000),
+      .min(1, "Enter the date it happened")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the date picker"),
+    description: z.string().trim().min(1, "Tell us what happened").max(2000),
     source: z.enum(["web", "qr"]).optional().default("web"),
   })
   .superRefine((v, ctx) => {
     if (v.propertySlug === OTHER_COMMUNITY && !v.communityText) {
       ctx.addIssue({ code: "custom", path: ["communityText"], message: "Type your community name" });
     }
-    if (v.issueType === "other" && !v.description) {
-      ctx.addIssue({ code: "custom", path: ["description"], message: "Tell us what happened" });
+    if (v.wantsCall && !v.reporterPhone) {
+      ctx.addIssue({ code: "custom", path: ["reporterPhone"], message: "Enter your phone number" });
+    } else if (v.wantsCall && v.reporterPhone && !isPhone(v.reporterPhone)) {
+      ctx.addIssue({ code: "custom", path: ["reporterPhone"], message: "Enter a valid phone number" });
     }
   });
 export type ResidentReportInput = z.input<typeof residentReportSchema>;

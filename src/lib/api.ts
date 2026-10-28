@@ -26,12 +26,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export type PropertyOption = { name: string; slug: string };
-
-export function getProperties() {
-  return request<{ properties: PropertyOption[] }>("/api/properties").then((r) => r.properties);
-}
-
 export function submitResidentReport(data: ResidentReportInput, photos: Blob[], turnstileToken: string) {
   const form = new FormData();
   form.set("data", JSON.stringify(data));

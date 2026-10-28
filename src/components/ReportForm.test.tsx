@@ -12,7 +12,6 @@ vi.mock("../lib/api", async (orig) => {
   const { ISSUE_TYPES, ISSUE_TYPE_LABELS } = await import("../lib/schemas");
   return {
     ...actual,
-    getProperties: vi.fn(async () => [{ name: "Demo Community", slug: "demo-community" }]),
     submitResidentReport: vi.fn(async () => ({ refNo: 1001, token: "a".repeat(36) })),
     // The saved list from Admin → Settings: the original types plus one CBES added.
     getPublicSettings: vi.fn(async () => ({
@@ -46,24 +45,42 @@ beforeEach(() => vi.clearAllMocks());
 describe("ReportForm", () => {
   it("shows inline errors and does not submit when required fields are empty", async () => {
     renderForm();
-    await screen.findByRole("option", { name: "Demo Community" });
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
-    expect(await screen.findByText("Choose your community")).toBeInTheDocument();
+    expect(await screen.findByText("Type your community name")).toBeInTheDocument();
     expect(screen.getByText("Enter your building and unit")).toBeInTheDocument();
-    expect(screen.getByText("Enter a phone number or email")).toBeInTheDocument();
+    expect(screen.getByText("Enter your email")).toBeInTheDocument();
+    expect(screen.getByText("Tell us what happened")).toBeInTheDocument();
     expect(api.submitResidentReport).not.toHaveBeenCalled();
   });
 
-  it("keeps the errors showing when the community list arrives after an early submit", async () => {
-    let finish!: (rows: { name: string; slug: string }[]) => void;
-    vi.mocked(api.getProperties).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+  it("never lists the communities CBES serves", async () => {
+    renderForm();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  });
+
+  it("keeps the errors showing when the saved issue types arrive after an early submit", async () => {
+    let finish!: (s: Awaited<ReturnType<typeof api.getPublicSettings>>) => void;
+    vi.mocked(api.getPublicSettings).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
     renderForm();
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
     expect(await screen.findByText("Enter your building and unit")).toBeInTheDocument();
 
-    finish([{ name: "Demo Community", slug: "demo-community" }]);
-    await screen.findByRole("option", { name: "Demo Community" });
-    expect(screen.getByText("Enter your building and unit")).toBeInTheDocument();
+    finish({ issueTypes: [], serviceNights: [], startTime: "20:00", holidays: [] });
+    await waitFor(() => expect(screen.getByText("Enter your building and unit")).toBeInTheDocument());
+  });
+
+  it("sends a typed community name", async () => {
+    renderForm();
+    await userEvent.type(screen.getByLabelText("Community"), "Maple Ridge");
+    await userEvent.type(screen.getByLabelText("Building and unit"), "Bldg 4, Unit 412");
+    await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    await waitFor(() => expect(api.submitResidentReport).toHaveBeenCalled());
+    const [data] = vi.mocked(api.submitResidentReport).mock.calls[0];
+    expect(data).toMatchObject({ propertySlug: "other", communityText: "Maple Ridge", source: "web" });
   });
 
   it("offers the issue types saved in Admin → Settings, including a ?type= link to a new one", async () => {
@@ -74,12 +91,13 @@ describe("ReportForm", () => {
 
   it("pre-fills community and unit from a QR link and marks the source", async () => {
     renderForm("/report?p=demo-community&u=412");
-    await screen.findByRole("option", { name: "Demo Community" });
-    expect(screen.getByLabelText("Community")).toHaveValue("demo-community");
+    expect(screen.getByText("Filled in from your QR code")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Community" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Building and unit")).toHaveValue("Unit 412");
 
     await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
-    await userEvent.type(screen.getByLabelText("Phone or email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
 
     await waitFor(() => expect(api.submitResidentReport).toHaveBeenCalled());
@@ -93,12 +111,39 @@ describe("ReportForm", () => {
     });
   });
 
-  it("asks for the community name when it is not listed", async () => {
+  it("asks for a phone number only after the resident offers one", async () => {
     renderForm();
-    await screen.findByRole("option", { name: "Demo Community" });
-    expect(screen.queryByLabelText("Community name")).not.toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText("Community"), "other");
-    expect(screen.getByLabelText("Community name")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Can we call you?" }));
+    expect(screen.getByLabelText("Phone number")).toHaveFocus();
+
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    expect(await screen.findByText("Enter your phone number")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Don't call me" }));
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Can we call you?" })).toHaveFocus();
+  });
+
+  it("sends the phone number with the email when the resident can take a call", async () => {
+    renderForm("/report?p=demo-community");
+    await userEvent.type(screen.getByLabelText("Building and unit"), "Bldg 4, Unit 412");
+    await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Can we call you?" }));
+    await userEvent.type(screen.getByLabelText("Phone number"), "(404) 555-0100");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
+    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    await waitFor(() => expect(api.submitResidentReport).toHaveBeenCalled());
+    const [data] = vi.mocked(api.submitResidentReport).mock.calls[0];
+    expect(data).toMatchObject({ reporterEmail: "jordan@example.com", wantsCall: true, reporterPhone: "(404) 555-0100" });
+  });
+
+  it("lets a QR resident type a different community instead", async () => {
+    renderForm("/report?p=demo-community");
+    await userEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(screen.getByLabelText("Community")).toHaveFocus();
+    expect(screen.queryByText("Filled in from your QR code")).not.toBeInTheDocument();
   });
 
   it("pre-selects bulk pickup from the residents page link to /report", async () => {
@@ -108,10 +153,10 @@ describe("ReportForm", () => {
 
   it("shows the reference number and status link after submitting", async () => {
     renderForm("/report?p=demo-community");
-    await screen.findByRole("option", { name: "Demo Community" });
     await userEvent.type(screen.getByLabelText("Building and unit"), "Bldg 4, Unit 412");
     await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
-    await userEvent.type(screen.getByLabelText("Phone or email"), "(404) 555-0100");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
 
     expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();
@@ -121,17 +166,20 @@ describe("ReportForm", () => {
     );
   });
 
-  it("shows field errors returned by the server", async () => {
+  it("asks for the community name when the server doesn't recognize the QR code", async () => {
     vi.mocked(api.submitResidentReport).mockRejectedValueOnce(
-      new ApiError("Please fix the highlighted fields.", 422, { propertySlug: "Choose your community from the list" }),
+      new ApiError("Please fix the highlighted fields.", 422, {
+        propertySlug: "We couldn't match your QR code. Type your community name.",
+      }),
     );
     renderForm("/report?p=demo-community");
-    await screen.findByRole("option", { name: "Demo Community" });
     await userEvent.type(screen.getByLabelText("Building and unit"), "412");
     await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
-    await userEvent.type(screen.getByLabelText("Phone or email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
-    expect(await screen.findByText("Choose your community from the list")).toBeInTheDocument();
+    expect(await screen.findByText("We couldn't match your QR code. Type your community name.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Community")).toHaveAttribute("aria-invalid", "true");
   });
 
   it("leaves the date limit out of prerendered HTML so it never freezes at the build date", () => {
@@ -146,12 +194,12 @@ describe("ReportForm", () => {
 
   it("drops the QR unit code when the resident changes the unit", async () => {
     renderForm("/report?p=demo-community&u=412");
-    await screen.findByRole("option", { name: "Demo Community" });
     const unit = screen.getByLabelText("Building and unit");
     await userEvent.clear(unit);
     await userEvent.type(unit, "Bldg 2, Unit 205");
     await userEvent.type(screen.getByLabelText("Your name"), "Jordan");
-    await userEvent.type(screen.getByLabelText("Phone or email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Email"), "jordan@example.com");
+    await userEvent.type(screen.getByLabelText("Tell us more"), "Bags left by the door.");
     await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
     await waitFor(() => expect(api.submitResidentReport).toHaveBeenCalled());
     const [data] = vi.mocked(api.submitResidentReport).mock.calls[0];

@@ -47,7 +47,6 @@ vi.mock("../lib/api", async (original) => {
   const actual = await original<typeof import("../lib/api")>();
   return {
     ...actual,
-    getProperties: vi.fn(async () => []),
     submitQuote: vi.fn(async () => ({ ok: true })),
   };
 });
