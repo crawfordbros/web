@@ -1,30 +1,42 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { business } from "../config";
+import { holidaysPhrase, useSchedule } from "../lib/schedule";
 import { useSeo } from "../lib/seo";
 import { Container, PageHero, Pending } from "../components/ui";
 
 type Faq = { q: string; a: ReactNode };
 
+// The two answers that name the service calendar read it from Admin → Settings.
+function MissedPickup() {
+  const { nights, start } = useSchedule();
+  return (
+    <>
+      <Link to="/report">Report a missed pickup</Link> with your building and unit. We reply within 24 hours, and your
+      report is shared with your property management team. First, check that your container was out by {start} on a
+      service night ({nights}) and that bags were tied and inside the container.
+    </>
+  );
+}
+
+function Holidays() {
+  const { holidays } = useSchedule();
+  return (
+    <>
+      {holidays.length ? `There is no service on ${holidaysPhrase(holidays)}.` : "There are no holidays without service coming up."} Make-up nights and severe
+      weather: <Pending>[holiday make-up and weather policy to come from CBES]</Pending>
+    </>
+  );
+}
+
 const RESIDENTS: Faq[] = [
   {
     q: "My trash wasn't picked up. What should I do?",
-    a: (
-      <>
-        <Link to="/report">Report a missed pickup</Link> with your building and unit. We reply within 24 hours, and your
-        report is shared with your property management team. First, check that your container was out by 8 PM on a
-        service night (Sunday to Thursday) and that bags were tied and inside the container.
-      </>
-    ),
+    a: <MissedPickup />,
   },
   {
     q: "Is there service on holidays or in bad weather?",
-    a: (
-      <>
-        There is no service on {business.holidays.slice(0, -1).join(", ")} and {business.holidays.at(-1)}. Make-up
-        nights and severe weather: <Pending>[holiday make-up and weather policy to come from CBES]</Pending>
-      </>
-    ),
+    a: <Holidays />,
   },
   {
     q: "How many bags can I put out, and how big?",

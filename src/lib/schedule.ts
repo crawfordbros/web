@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPublicSettings, type Day, type PublicSettings } from "./api";
+import { business } from "../config";
 import { ISSUE_TYPES, ISSUE_TYPE_LABELS } from "./schemas";
 
 // The service calendar in words, from Admin → Settings. Pages render the built-in defaults first
@@ -46,3 +47,16 @@ export function usePublicSettings(): PublicSettings | null {
 
 /** The report form's choices: the saved list, or the original eight until it loads. */
 export const DEFAULT_ISSUE_TYPES = ISSUE_TYPES.map((key) => ({ key, label: ISSUE_TYPE_LABELS[key] as string, labelEs: null as string | null }));
+
+/** Service nights, start time and holidays in words, with the usual calendar until the saved one loads. */
+export function useSchedule() {
+  const settings = usePublicSettings();
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const nights = (settings && nightsPhrase(settings.serviceNights)) || "Sunday to Thursday";
+  return {
+    nights,
+    nightsLabel: nights.charAt(0).toUpperCase() + nights.slice(1),
+    start: settings ? timePhrase(settings.startTime) : "8 PM",
+    holidays: settings ? upcomingHolidays(settings.holidays, today) : business.holidays,
+  };
+}
