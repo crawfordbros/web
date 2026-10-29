@@ -2,18 +2,25 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-/** Builds require values from .env.local locally or Render environment variables in production. */
-function requireEnv(names: string[]): Plugin {
+/**
+ * Production builds require a real Turnstile site key from .env.local locally or Render environment variables.
+ * Other builds use Cloudflare's always-pass test key (src/config.ts).
+ */
+function requireTurnstileKey(): Plugin {
   return {
-    name: "cbes-require-env",
+    name: "cbes-require-turnstile-key",
     apply: "build",
     configResolved(config) {
-      if (config.mode === "development") return;
-      const missing = names.filter((name) => !config.env[name]);
-      if (missing.length) {
+      if (config.mode !== "production") return;
+      const key = config.env.VITE_TURNSTILE_SITE_KEY;
+      if (!key) {
         throw new Error(
-          `Build stopped: set ${missing.join(", ")} in Render's Environment settings, or .env.local for local builds (see .env.example).`,
+          "Build stopped: set VITE_TURNSTILE_SITE_KEY in Render's Environment settings, or .env.local for local builds (see .env.example).",
         );
+      }
+      // Cloudflare's test site keys start 1x, 2x or 3x followed by zeros; production forms would never verify.
+      if (/^[123]x0{20}/.test(key)) {
+        throw new Error("Build stopped: VITE_TURNSTILE_SITE_KEY is a Cloudflare test key. Production needs the real widget's site key.");
       }
     },
   };
@@ -42,7 +49,7 @@ function robots(): Plugin {
 // Production /api requests are routed to the production Worker by Cloudflare.
 export default defineConfig(({ mode }) => ({
   // Refuse to ship forms that can never pass the spam check.
-  plugins: [react(), tailwindcss(), robots(), requireEnv(["VITE_TURNSTILE_SITE_KEY"])],
+  plugins: [react(), tailwindcss(), robots(), requireTurnstileKey()],
   define: { __BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
   server: {
     host: true,

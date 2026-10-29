@@ -34,10 +34,20 @@ const CONFIGS: Record<string, UrlConfig> = {
 
 const base = CONFIGS[import.meta.env.MODE] ?? CONFIGS.development;
 
+/** Cloudflare's documented always-pass site key. The staging API verifies it with the matching test secret. */
+export const TURNSTILE_TEST_SITE_KEY = "1x00000000000000000000AA";
+
+/**
+ * The test and staging hosts use the always-pass key so automated QA browsers get through.
+ * Production uses VITE_TURNSTILE_SITE_KEY; production builds refuse to start without it (vite.config.ts).
+ */
+export function turnstileSiteKeyFor(mode: string, configured: string | undefined): string {
+  return ["development", "tunnel", "staging"].includes(mode) ? TURNSTILE_TEST_SITE_KEY : (configured ?? "");
+}
+
 export const config: SiteConfig = {
   ...base,
-  // Staging and production builds refuse to start without it (vite.config.ts).
-  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "",
+  turnstileSiteKey: turnstileSiteKeyFor(import.meta.env.MODE, import.meta.env.VITE_TURNSTILE_SITE_KEY),
 };
 
 /** Forms must carry a Turnstile token when a site key is configured. */
