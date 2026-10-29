@@ -21,7 +21,7 @@ function Logo({ className }: { className?: string }) {
       src="/logo-gold-on-navy.webp"
       alt="CB Environment Solutions"
       width={240}
-      height={183}
+      height={205}
       className={cx("w-auto", className)}
     />
   );
