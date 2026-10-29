@@ -26,7 +26,13 @@ function requireTurnstileKey(): Plugin {
   };
 }
 
-/** Production allows crawling; every other build (staging, local) is noindex. */
+const NOINDEX_ROBOTS = "User-agent: *\nDisallow: /\n";
+
+/**
+ * Production allows crawling of the marketing site only; every other build (staging, local) and the
+ * dev server, which the test host exposes publicly, is noindex. Cloudflare's managed robots.txt adds
+ * an "Allow: /" group above ours, so non-production hosts also send an X-Robots-Tag header.
+ */
 function robots(): Plugin {
   let mode = "development";
   return {
@@ -34,12 +40,25 @@ function robots(): Plugin {
     configResolved(config) {
       mode = config.mode;
     },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        res.setHeader("X-Robots-Tag", "noindex, nofollow");
+        if (req.url === "/robots.txt") {
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end(NOINDEX_ROBOTS);
+          return;
+        }
+        next();
+      });
+    },
     generateBundle() {
-      const source =
-        mode === "production"
-          ? "User-agent: *\nAllow: /\nDisallow: /portal\nDisallow: /admin\nDisallow: /report/\n\nSitemap: https://cbenvironments.com/sitemap.xml\n"
-          : "User-agent: *\nDisallow: /\n";
+      const production = mode === "production";
+      const source = production
+        ? "User-agent: *\nAllow: /\nDisallow: /portal\nDisallow: /admin\nDisallow: /report/\nDisallow: /api/\n\nSitemap: https://cbenvironments.com/sitemap.xml\n"
+        : NOINDEX_ROBOTS;
       this.emitFile({ type: "asset", fileName: "robots.txt", source });
+      // Workers static assets read _headers and don't serve it.
+      if (!production) this.emitFile({ type: "asset", fileName: "_headers", source: "/*\n  X-Robots-Tag: noindex, nofollow\n" });
     },
   };
 }
