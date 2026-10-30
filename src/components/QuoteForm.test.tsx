@@ -19,15 +19,16 @@ describe("QuoteForm", () => {
   it("carries over the home page short form without putting it in the URL", () => {
     render(
       <MemoryRouter
-        initialEntries={[{ pathname: "/quote", state: { name: "Pat", community: "Maple Ridge", email: "pat@example.com", units: "240" } }]}
+        initialEntries={[{ pathname: "/quote", state: { name: "Pat", community: "Maple Ridge", email: "pat@example.com", properties: "3", units: "720" } }]}
       >
         <QuoteForm />
       </MemoryRouter>,
     );
     expect(screen.getByLabelText("Full name")).toHaveValue("Pat");
-    expect(screen.getByLabelText("Community name")).toHaveValue("Maple Ridge");
+    expect(screen.getByLabelText("Community or portfolio name")).toHaveValue("Maple Ridge");
     expect(screen.getByLabelText("Email")).toHaveValue("pat@example.com");
-    expect(screen.getByLabelText("Number of units")).toHaveValue(240);
+    expect(screen.getByLabelText("How many properties need service?")).toHaveValue(3);
+    expect(screen.getByLabelText("How many units TOTAL?")).toHaveValue(720);
   });
 
   it("starts with valet trash and spot pressure washing selected", () => {
@@ -42,12 +43,13 @@ describe("QuoteForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Request my quote" }));
     expect(await screen.findByText("Enter your name")).toBeInTheDocument();
     expect(screen.getByText("Enter a valid email")).toBeInTheDocument();
-    expect(screen.getByText("Enter the community name")).toBeInTheDocument();
-    expect(screen.getByText("Enter the number of units")).toBeInTheDocument();
+    expect(screen.getByText("Enter the community or portfolio name")).toBeInTheDocument();
+    expect(screen.getByText("Enter the number of properties")).toBeInTheDocument();
+    expect(screen.getByText("Enter the total number of units")).toBeInTheDocument();
     expect(api.submitQuote).not.toHaveBeenCalled();
   });
 
-  it("submits a quote and confirms", async () => {
+  it("submits the representative's contact details and portfolio totals", async () => {
     render(
       <MemoryRouter
         initialEntries={[{ pathname: "/quote", state: { name: "Pat", community: "Maple Ridge", email: "pat@example.com", units: "240" } }]}
@@ -55,12 +57,15 @@ describe("QuoteForm", () => {
         <QuoteForm />
       </MemoryRouter>,
     );
+    await userEvent.type(screen.getByLabelText("How many properties need service?"), "3");
     await userEvent.click(screen.getByRole("button", { name: "Request my quote" }));
     await waitFor(() => expect(api.submitQuote).toHaveBeenCalled());
     expect(vi.mocked(api.submitQuote).mock.calls[0][0]).toMatchObject({
       kind: "quote",
       fullName: "Pat",
       communityName: "Maple Ridge",
+      propertyCount: 3,
+      unitCount: 240,
       services: ["valet_trash", "pressure_washing"],
     });
     expect(await screen.findByText(/Nick or Nigel will reach out within 24 hours/)).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -22,9 +22,11 @@ describe("HomePage quote starter", () => {
     const form = screen.getByRole("form", { name: "Start a quote" });
     await userEvent.type(form.querySelector("input[autocomplete=name]")!, "Pat");
     await userEvent.type(form.querySelector("input[type=email]")!, "pat@example.com");
+    await userEvent.type(within(form).getByLabelText("How many properties need service?"), "3");
+    await userEvent.type(within(form).getByLabelText("How many units TOTAL?"), "720");
     await userEvent.click(screen.getByRole("button", { name: "Request a Quote" }));
     const probe = JSON.parse((await screen.findByTestId("probe")).textContent!);
     expect(probe.search).toBe("");
-    expect(probe.state).toMatchObject({ name: "Pat", email: "pat@example.com" });
+    expect(probe.state).toMatchObject({ name: "Pat", email: "pat@example.com", properties: "3", units: "720" });
   });
 });

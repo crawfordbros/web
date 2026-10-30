@@ -77,7 +77,7 @@ function ProofStrip() {
 function QuoteStarter() {
   const navigate = useNavigate();
   const hydrated = useHydrated();
-  const [values, setValues] = useState({ name: "", community: "", email: "", units: "" });
+  const [values, setValues] = useState({ name: "", community: "", email: "", properties: "", units: "" });
   const set = (k: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
 
@@ -94,9 +94,10 @@ function QuoteStarter() {
       className="grid min-w-0 flex-[1_1_460px] grid-cols-1 gap-4 rounded-2xl bg-white p-5 text-ink sm:grid-cols-2 sm:p-7"
     >
       <TextField label="Name" autoComplete="name" value={values.name} onChange={set("name")} />
-      <TextField label="Community name" value={values.community} onChange={set("community")} />
+      <TextField label="Community or portfolio name" value={values.community} onChange={set("community")} />
       <TextField label="Email" type="email" autoComplete="email" value={values.email} onChange={set("email")} />
-      <TextField label="Number of units" inputMode="numeric" value={values.units} onChange={set("units")} />
+      <TextField label="How many properties need service?" type="number" inputMode="numeric" min={1} max={100000} step={1} value={values.properties} onChange={set("properties")} />
+      <TextField label="How many units TOTAL?" hint="Across all properties needing service." type="number" inputMode="numeric" min={1} max={100000} step={1} value={values.units} onChange={set("units")} />
       <Button type="submit" disabled={!hydrated} className="sm:col-span-2">
         Request a Quote
       </Button>
@@ -276,10 +277,10 @@ export function HomePage() {
         <Container className="flex flex-wrap items-start gap-10 py-16 sm:py-[88px] lg:gap-12">
           <div className="min-w-0 flex-[1_1_420px]">
             <h2 className="mb-4 text-[28px] leading-tight font-bold sm:text-4xl lg:text-[40px]">
-              Aiming for excellence. Let's talk about your community.
+              Aiming for excellence. Let's talk about your properties.
             </h2>
             <p className="mb-6 text-[17px] leading-relaxed text-on-navy">
-              Tell us about your property and Nick or Nigel will reach out within 24 hours.
+              Tell us about the properties you represent and Nick or Nigel will reach out within 24 hours.
             </p>
             <p className="m-0 leading-loose">
               <a href={`mailto:${business.email}`} className="text-white hover:text-gold-light">

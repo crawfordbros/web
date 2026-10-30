@@ -7,7 +7,7 @@ export function QuotePage() {
   useSeo({
     title: "Get a Quote",
     description:
-      "Request a valet trash quote for your Atlanta apartment community. Nick or Nigel will reach out within 24 hours with a quote built for your unit count.",
+      "Request a valet trash quote for your Atlanta properties. Nick or Nigel will reach out within 24 hours with a quote built for your total unit count.",
     path: "/quote",
   });
 
@@ -16,10 +16,10 @@ export function QuotePage() {
       <Container className="flex flex-wrap items-start gap-10 py-12 sm:py-16 lg:gap-12">
         <div className="min-w-0 flex-[1_1_340px]">
           <Eyebrow>Get a quote</Eyebrow>
-          <h1 className="mb-4 text-[34px] leading-tight font-bold text-navy sm:text-[44px]">Let's talk about your community.</h1>
+          <h1 className="mb-4 text-[34px] leading-tight font-bold text-navy sm:text-[44px]">Let's talk about your properties.</h1>
           <p className="mb-6 text-[17px] leading-relaxed text-muted">
-            Tell us a little about your property. Nick or Nigel will reach out within 24 hours with a quote built for
-            your unit count and services.
+            Tell us about the properties you represent. Nick or Nigel will reach out within 24 hours with a quote built for
+            your total unit count and services.
           </p>
           <ul className="mb-8 flex list-none flex-col gap-3 p-0">
             <CheckItem>Containers supplied by CBES</CheckItem>

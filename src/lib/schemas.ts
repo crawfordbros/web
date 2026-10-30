@@ -1,5 +1,5 @@
 // Request schemas shared by the API and the website forms.
-// Copied from cbes-api/src/shared/schemas.ts, which is the source of truth. cbes-web keeps this
+// The API copy (cbes-api/src/shared/schemas.ts) is the source of truth; cbes-web keeps an
 // identical copy in src/lib/schemas.ts. Change both together.
 import { z } from "zod";
 
@@ -130,9 +130,12 @@ export const residentReportSchema = z
 export type ResidentReportInput = z.input<typeof residentReportSchema>;
 export type ResidentReport = z.output<typeof residentReportSchema>;
 
-const unitCount = z.preprocess(
+const serviceCount = z.preprocess(
   (v) => (v === "" || v === null || v === undefined ? undefined : v),
-  z.coerce.number({ error: "Enter a number" }).int("Enter a whole number").min(1).max(20000).optional(),
+  z.union([z.string(), z.number()])
+    .transform(Number)
+    .pipe(z.number({ error: "Enter a number" }).int("Enter a whole number").min(1, "Enter at least 1").max(100_000))
+    .optional(),
 );
 
 export const quoteSchema = z
@@ -144,7 +147,8 @@ export const quoteSchema = z
     phone: optionalText(30).refine((v) => v === undefined || isEmailOrPhone(v), "Enter a valid phone number"),
     email: z.string().trim().regex(EMAIL_RE, "Enter a valid email").max(150),
     communityName: optionalText(150),
-    unitCount,
+    propertyCount: serviceCount,
+    unitCount: serviceCount,
     address: optionalText(250),
     propertyType: z.enum(PROPERTY_TYPES).optional(),
     desiredStart: isoDate,
@@ -154,8 +158,9 @@ export const quoteSchema = z
   })
   .superRefine((v, ctx) => {
     if (v.kind === "quote") {
-      if (!v.communityName) ctx.addIssue({ code: "custom", path: ["communityName"], message: "Enter the community name" });
-      if (v.unitCount === undefined) ctx.addIssue({ code: "custom", path: ["unitCount"], message: "Enter the number of units" });
+      if (!v.communityName) ctx.addIssue({ code: "custom", path: ["communityName"], message: "Enter the community or portfolio name" });
+      if (v.propertyCount === undefined) ctx.addIssue({ code: "custom", path: ["propertyCount"], message: "Enter the number of properties" });
+      if (v.unitCount === undefined) ctx.addIssue({ code: "custom", path: ["unitCount"], message: "Enter the total number of units" });
     } else if (!v.notes) {
       ctx.addIssue({ code: "custom", path: ["notes"], message: "Enter a message" });
     }

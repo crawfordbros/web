@@ -34,7 +34,7 @@ function Section({ step, title, children }: { step: number; title: string; child
 
 export function QuoteForm() {
   // Values typed into the home page quote starter arrive as navigation state.
-  const starter = (useLocation().state ?? {}) as Partial<Record<"name" | "email" | "community" | "units", string>>;
+  const starter = (useLocation().state ?? {}) as Partial<Record<"name" | "email" | "community" | "properties" | "units", string>>;
   const {
     register,
     handleSubmit,
@@ -47,6 +47,7 @@ export function QuoteForm() {
       fullName: starter.name ?? "",
       email: starter.email ?? "",
       communityName: starter.community ?? "",
+      propertyCount: starter.properties ?? "",
       unitCount: starter.units ?? "",
       services: ["valet_trash", "pressure_washing"],
     },
@@ -76,18 +77,20 @@ export function QuoteForm() {
       aria-label="Request a quote"
       className="flex min-w-0 flex-[1_1_560px] flex-col gap-8 rounded-2xl border border-line bg-white p-5 sm:p-9"
     >
-      <Section step={1} title="About you">
+      <Section step={1} title="Your contact information">
+        <p className="m-0 text-sm text-muted sm:col-span-2">We'll follow up with you about service for the properties you represent.</p>
         <TextField label="Full name" autoComplete="name" error={errors.fullName?.message} {...register("fullName")} />
-        <TextField label="Title" placeholder="Community Manager" optional autoComplete="organization-title" {...register("title")} />
+        <TextField label="Title" placeholder="Regional Manager" optional autoComplete="organization-title" {...register("title")} />
         <TextField label="Management company" optional autoComplete="organization" {...register("company")} />
         <TextField label="Phone" type="tel" optional autoComplete="tel" error={errors.phone?.message} {...register("phone")} />
         <TextField label="Email" type="email" autoComplete="email" error={errors.email?.message} {...register("email")} />
       </Section>
 
-      <Section step={2} title="Your property">
-        <TextField label="Community name" error={errors.communityName?.message} {...register("communityName")} />
-        <TextField label="Number of units" type="number" inputMode="numeric" min={1} error={errors.unitCount?.message} {...register("unitCount")} />
-        <TextField label="Address" optional autoComplete="street-address" className="sm:col-span-2" {...register("address")} />
+      <Section step={2} title="Your properties">
+        <TextField label="How many properties need service?" type="number" inputMode="numeric" min={1} max={100000} step={1} error={errors.propertyCount?.message} {...register("propertyCount")} />
+        <TextField label="How many units TOTAL?" hint="Add up the units across all properties needing service." type="number" inputMode="numeric" min={1} max={100000} step={1} error={errors.unitCount?.message} {...register("unitCount")} />
+        <TextField label="Community or portfolio name" className="sm:col-span-2" error={errors.communityName?.message} {...register("communityName")} />
+        <TextField label="Property address or locations" optional className="sm:col-span-2" {...register("address")} />
         <SelectField label="Property type" optional {...register("propertyType", { setValueAs: (v) => v || undefined })}>
           <option value="">Select…</option>
           {PROPERTY_TYPES.map((t) => (

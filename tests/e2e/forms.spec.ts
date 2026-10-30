@@ -51,18 +51,21 @@ test("an unknown status link explains what to do", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "We couldn't find that report" })).toBeVisible();
 });
 
-test("property manager starts a quote on the home page and finishes it on the quote form", async ({ page }) => {
+test("representative starts a portfolio quote on the home page and finishes it on the quote form", async ({ page }) => {
   await page.goto("/");
   const starter = page.getByRole("form", { name: "Start a quote" });
   await starter.getByLabel("Name", { exact: true }).fill("E2E Manager");
-  await starter.getByLabel("Community name").fill("Maple Ridge");
+  await starter.getByLabel("Community or portfolio name").fill("Maple Ridge Portfolio");
   await starter.getByLabel("Email").fill("e2e-manager@example.com");
-  await starter.getByLabel("Number of units").fill("240");
+  await starter.getByLabel("How many properties need service?").fill("3");
+  await starter.getByLabel("How many units TOTAL?").fill("720");
   await starter.getByRole("button", { name: "Request a Quote" }).click();
 
   await expect(page).toHaveURL(/\/quote#quote-form$/);
   const form = page.getByRole("form", { name: "Request a quote" });
   await expect(form.getByLabel("Full name")).toHaveValue("E2E Manager");
+  await expect(form.getByLabel("How many properties need service?")).toHaveValue("3");
+  await expect(form.getByLabel("How many units TOTAL?")).toHaveValue("720");
   await form.getByLabel("Phone").fill("(404) 555-0100");
   await form.getByLabel("Property type").selectOption("garden");
   await form.getByRole("checkbox", { name: "Bulk trash removal" }).check();
