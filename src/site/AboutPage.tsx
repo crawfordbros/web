@@ -43,7 +43,7 @@ export function AboutPage() {
               living.
             </p>
             <p className="m-0 text-lg leading-relaxed text-on-navy">
-              They started CB Environment Solutions to run it the right way: owners on the route, every report answered,
+              They started CB Environment Solutions to run it the right way: owners on the route, every issue answered,
               and every property treated like home. Aiming for excellence, every time.
             </p>
           </div>

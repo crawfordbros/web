@@ -54,7 +54,7 @@ const STEPS = [
 
 function ProofStrip() {
   const stats = [
-    ["24 hrs", "Reply to every resident report"],
+    ["24 hrs", "Reply to every resident issue"],
     ["5 nights", "Sunday to Thursday, from 8 PM"],
     ["Every Monday", "Service report to your management Director"],
     ...(business.communitiesServed ? [[String(business.communitiesServed), "Communities served"]] : []),
@@ -109,7 +109,7 @@ export function HomePage() {
   useSeo({
     title: "Valet Trash for Atlanta Apartments | CB Environment Solutions",
     description:
-      "Doorstep valet trash, bulk removal and pressure washing for metro Atlanta apartment communities. Every resident report answered within 24 hours.",
+      "Doorstep valet trash, bulk removal and pressure washing for metro Atlanta apartment communities. Every resident issue answered within 24 hours.",
     path: "/",
   });
 
@@ -209,7 +209,7 @@ export function HomePage() {
               <strong>Owner-managed.</strong> Nick and Nigel are on the routes, not behind a call center.
             </CheckItem>
             <CheckItem>
-              <strong>Every report answered within 24 hours,</strong> and fully visible to your management team.
+              <strong>Every issue answered within 24 hours,</strong> and fully visible to your management team.
             </CheckItem>
             <CheckItem>
               <strong>Overwatch program.</strong> Units with 3 or more violations in 30 days are flagged early.
@@ -228,7 +228,7 @@ export function HomePage() {
           <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
             {[
               ["5 / 5", "Nights serviced"],
-              ["[ ]", "Reports resolved"],
+              ["[ ]", "Issues resolved"],
               ["[ ]", "Overwatch units"],
             ].map(([v, l]) => (
               <div key={l} className="rounded-[10px] bg-tint p-3 sm:p-3.5">
@@ -243,7 +243,7 @@ export function HomePage() {
               <span className="font-semibold text-success">Logged</span>
             </li>
             <li className="flex justify-between gap-3 border-b border-[#EEEEF4] pb-2">
-              <span>Resident report · Missed pickup</span>
+              <span>Resident issue · Missed pickup</span>
               <span className="font-semibold text-success">Resolved</span>
             </li>
             <li className="flex justify-between gap-3">

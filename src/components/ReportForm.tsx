@@ -115,17 +115,17 @@ function Submitted({ refNo, token }: { refNo: number; token: string }) {
   return (
     <div className="rounded-2xl border border-line bg-white p-6 sm:p-8" role="status">
       <h3 ref={headingRef} tabIndex={-1} className="mt-0 mb-3 text-2xl text-navy outline-none">
-        Thanks. We got your report #{refNo}.
+        Thanks. We logged your issue #{refNo}.
       </h3>
       <p className="mb-5 leading-relaxed text-muted">
-        CB Environment Solutions replies within 24 hours. Your report is also shared with your property management
+        CB Environment Solutions replies within 24 hours. Your issue is also shared with your property management
         team. Save the link below to check its status any time.
       </p>
       <Link
         to={`/report/${token}`}
         className="inline-flex min-h-11 items-center rounded-lg bg-navy px-6 font-bold text-white no-underline hover:bg-navy-dark hover:text-white"
       >
-        Check your report status
+        Check your issue status
       </Link>
     </div>
   );
@@ -308,7 +308,7 @@ export function ReportForm({ className }: { className?: string }) {
         disabled={!hydrated || !browserVerified}
         className="m-0 grid min-w-0 grid-cols-1 gap-5 border-0 p-0 sm:grid-cols-2"
       >
-        <legend className="sr-only">Report details</legend>
+        <legend className="sr-only">Issue details</legend>
         {typingCommunity ? (
           <TextField
             label="Community"
@@ -356,7 +356,7 @@ export function ReportForm({ className }: { className?: string }) {
                 type="tel"
                 autoComplete="tel"
                 inputMode="tel"
-                hint="We only call about this report."
+                hint="We only call about this issue."
                 error={errors.reporterPhone?.message}
                 {...register("reporterPhone")}
               />
@@ -397,7 +397,7 @@ export function ReportForm({ className }: { className?: string }) {
       <div className="flex flex-col gap-4">
         {formError && <FormAlert>{formError}</FormAlert>}
         <Button type="submit" disabled={isSubmitting || !hydrated || !browserVerified} className="w-full sm:w-auto sm:self-start">
-          {isSubmitting ? "Sending…" : "Submit report"}
+          {isSubmitting ? "Sending…" : "Report issue"}
         </Button>
       </div>
     </form>

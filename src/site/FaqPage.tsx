@@ -13,7 +13,7 @@ function MissedPickup() {
   return (
     <>
       <Link to="/report">Report a missed pickup</Link> with your building and unit. We reply within 24 hours, and your
-      report is shared with your property management team. First, check that your container was out by {start} on a
+      issue is shared with your property management team. First, check that your container was out by {start} on a
       service night ({nights}) and that bags were tied and inside the container.
     </>
   );
@@ -91,11 +91,11 @@ const MANAGERS: Faq[] = [
   },
   {
     q: "What reporting will my team get?",
-    a: "Every Monday at 7 AM your management Director gets a report for the prior week: nights serviced, resident reports and how fast we replied, violations by type with photos, Overwatch units, and pressure washing.",
+    a: "Every Monday at 7 AM your management Director gets a report for the prior week: nights serviced, resident issues and how fast we replied, violations by type with photos, Overwatch units, and pressure washing.",
   },
   {
-    q: "Who sees resident reports and violations?",
-    a: "Resident reports are fully visible to your management team. Violations go only to your office, with a photo of the trash and doorway, never of people. You decide any notice to residents.",
+    q: "Who sees resident issues and violations?",
+    a: "Resident issues are fully visible to your management team. Violations go only to your office, with a photo of the trash and doorway, never of people. You decide any notice to residents.",
   },
   {
     q: "What is the Overwatch program?",

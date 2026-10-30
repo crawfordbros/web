@@ -104,13 +104,13 @@ describe("Turnstile integration", () => {
     renderForm(<ReportForm />);
     expect(screen.getByText("Checking your browser…")).toBeInTheDocument();
     expect(screen.getByLabelText("Community")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Report issue" })).toBeDisabled();
     const verify = screen.getByRole("button", { name: "Verify resident_report" });
     expect(verify).toHaveAttribute("data-sitekey", "test-site-key");
     await userEvent.click(verify);
     expect(screen.getByText("Browser verified")).toBeInTheDocument();
     expect(screen.getByLabelText("Community")).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Submit report" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Report issue" })).toBeEnabled();
   });
 
   it.each(["onExpire", "onError", "onTimeout", "onScriptError", "onUnsupported"] as const)(
@@ -119,7 +119,7 @@ describe("Turnstile integration", () => {
       act(() => widget[callback]?.());
       expect(screen.getByLabelText("Community")).toBeDisabled();
       expect(screen.getByLabelText("Community")).toHaveValue("Maple Ridge");
-      expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Report issue" })).toBeDisabled();
       expect(screen.getByText(callback === "onExpire" ? "Checking your browser…" : "Browser check unavailable")).toBeInTheDocument();
 
       // Bypassing the disabled button must not reuse the previous token.
@@ -128,8 +128,8 @@ describe("Turnstile integration", () => {
       expect(submitResidentReport).not.toHaveBeenCalled();
 
       await userEvent.click(screen.getByRole("button", { name: "Verify resident_report" }));
-      await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
-      expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Report issue" }));
+      expect(await screen.findByRole("heading", { name: /issue #1001/i })).toBeInTheDocument();
       expect(submitResidentReport).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ communityText: "Maple Ridge", description: "Bags left by the door." }), [], "fresh-token",
       );
@@ -139,15 +139,15 @@ describe("Turnstile integration", () => {
   it("requires a new browser check after a failed report submission", async () => {
     vi.mocked(submitResidentReport).mockRejectedValueOnce(new ApiError("Try again", 503));
     await fillReport();
-    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
+    await userEvent.click(screen.getByRole("button", { name: "Report issue" }));
     expect(await screen.findByText("Try again")).toBeInTheDocument();
     expect(widget.reset).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Submit report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Report issue" })).toBeDisabled();
     expect(screen.getByLabelText("Community")).toHaveValue("Maple Ridge");
 
     await userEvent.click(screen.getByRole("button", { name: "Verify resident_report" }));
-    await userEvent.click(screen.getByRole("button", { name: "Submit report" }));
-    expect(await screen.findByRole("heading", { name: /report #1001/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Report issue" }));
+    expect(await screen.findByRole("heading", { name: /issue #1001/i })).toBeInTheDocument();
   });
 
   it.each(["onExpire", "onError", "onTimeout"] as const)("clears a stale token on %s", async (callback) => {

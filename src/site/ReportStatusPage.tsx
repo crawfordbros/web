@@ -26,7 +26,7 @@ const fmt = (iso: string) =>
 
 export function ReportStatusPage() {
   const { token = "" } = useParams();
-  useSeo({ title: "Report status", description: "The status of your report to CB Environment Solutions.", path: "/report", noindex: true });
+  useSeo({ title: "Issue status", description: "The status of your issue with CB Environment Solutions.", path: "/report", noindex: true });
 
   const query = useQuery({
     queryKey: ["report-status", token],
@@ -37,12 +37,12 @@ export function ReportStatusPage() {
   return (
     <section className="bg-surface">
       <Container className="max-w-[760px] pt-10 pb-16 sm:pt-14 sm:pb-20">
-        {query.isLoading && <p className="text-muted" role="status">Loading your report…</p>}
+        {query.isLoading && <p className="text-muted" role="status">Loading your issue…</p>}
 
         {query.isError && (
           <div className="rounded-2xl border border-line bg-white p-6 sm:p-8">
             <h1 className="mt-0 mb-3 text-[28px] font-bold text-navy">
-              {query.error instanceof ApiError && query.error.status === 404 ? "We couldn't find that report" : "Something went wrong"}
+              {query.error instanceof ApiError && query.error.status === 404 ? "We couldn't find that issue" : "Something went wrong"}
             </h1>
             <p className="mb-5 leading-relaxed text-muted">
               Check that you opened the full link from your confirmation email. You can also email us at{" "}
@@ -56,7 +56,7 @@ export function ReportStatusPage() {
 
         {query.data && (
           <div className="rounded-2xl border border-line bg-white p-6 sm:p-8">
-            <p className="mt-0 mb-1 text-sm font-semibold text-gold-text">Report #{query.data.refNo}</p>
+            <p className="mt-0 mb-1 text-sm font-semibold text-gold-text">Issue #{query.data.refNo}</p>
             <h1 className="mt-0 mb-6 text-[28px] font-bold text-navy sm:text-4xl">{query.data.statusLabel}</h1>
 
             <ol className="mb-8 grid list-none grid-cols-3 gap-2 p-0" aria-label="Progress">
@@ -88,9 +88,9 @@ export function ReportStatusPage() {
             </dl>
 
             <p className="mt-8 mb-0 text-[15px] leading-relaxed text-muted">
-              Questions about this report? Email{" "}
-              <a href={`mailto:${business.email}?subject=Report%20%23${query.data.refNo}`}>{business.email}</a> with
-              your report number.
+              Questions about this issue? Email{" "}
+              <a href={`mailto:${business.email}?subject=Issue%20%23${query.data.refNo}`}>{business.email}</a> with
+              your issue number.
             </p>
           </div>
         )}
