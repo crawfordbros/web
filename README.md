@@ -1,33 +1,30 @@
-# CB Environment Solutions · Admin
+# CB Environment Solutions · Web
 
-The operations frontend for **CB Environment Solutions**, a valet trash and property services company serving metro Atlanta. This repository brings together the admin dashboard, property management portal, and **Steward**, the mobile crew app.
+The public website for **CB Environment Solutions**, a valet trash and property services company serving metro Atlanta. It introduces the company's services, helps residents report issues, and gives property managers a way to request a quote.
 
-[Companion website repository](https://github.com/crawfordbros/web) · [MIT license](LICENSE)
+[Companion admin repository](https://github.com/crawfordbros/admin) · [MIT license](LICENSE)
 
 ## What it does
 
-| App | Who it serves | Main workflows |
-| --- | --- | --- |
-| **Admin** · `/admin` | Admins and super admins | Operations overview, organizations and properties, resident issues, violation review, quotes, weekly reporting, user access, and service settings. |
-| **Property portal** · `/portal` | Organization representatives and property managers | Property dashboards, issue conversations, violations and courtesy notices, weekly reports, and team management within assigned access. |
-| **Steward** · `/steward` | Stewards and valets | Shift check-ins, crew coordination, property details, issue updates, photo-backed violations, and training guides. |
-
-Shared capabilities include invitation-based onboarding, Clerk sign-in, passkey or authenticator verification, account settings, and role-aware navigation. Reports and operational documents can be exported as PDFs; property QR posters connect residents to the public website's reporting form.
-
-Steward includes English and Spanish interfaces, light and dark themes, home-screen installation, cached app content, and an outbox for supported submissions during connection loss.
+- **Company and service pages:** Home, services, about, resident information, FAQs, contact, and legal pages.
+- **Resident issue reporting:** Validated forms, photo uploads with browser-side compression, and property/unit details prefilled from QR links.
+- **Report tracking:** A private status link returned after a successful submission.
+- **Quote and contact requests:** Form validation, submission feedback, and Cloudflare Turnstile verification.
+- **Search and sharing:** Prerendered public pages, page-specific metadata, canonical URLs, Open Graph tags, and a sitemap.
+- **Responsive presentation:** Mobile and desktop layouts, self-hosted fonts, and shared brand styles.
 
 ## Repository scope
 
-This is the frontend source. The API, database, file storage, email delivery, and service integrations are maintained privately and are not included. The [web repository](https://github.com/crawfordbros/web) contains the public website.
+This repository contains the public website frontend. The [admin repository](https://github.com/crawfordbros/admin) contains the authenticated admin dashboard, property portal, and Steward crew app.
 
-Running the complete application requires an authorized account, a Clerk application configured to match the API, and access to the backend. There is no bundled demo backend. The API enforces permissions and verification independently of the frontend's navigation and route guards.
+The API, database, file storage, email delivery, and service integrations are maintained privately and are not included. You can run the website and its unit tests from this checkout; working submissions, report status, and live service settings require a compatible backend. Full browser tests also require the private API checkout.
 
 ## Stack
 
 - **UI:** React 18, TypeScript, React Router 6, and Tailwind CSS 4.
-- **Data and identity:** TanStack Query, Clerk, and SimpleWebAuthn.
-- **Documents:** jsPDF, AutoTable, and QR code generation.
-- **Build and hosting:** Vite 8 and Cloudflare Workers with static assets.
+- **Forms and data:** React Hook Form, Zod, and TanStack Query.
+- **Spam protection:** Cloudflare Turnstile.
+- **Build and hosting:** Vite 8, build-time prerendering, and Cloudflare Workers static assets.
 - **Quality checks:** ESLint, Vitest, Testing Library, Playwright, and axe accessibility checks.
 
 ## Local development
@@ -35,81 +32,92 @@ Running the complete application requires an authorized account, a Clerk applica
 Use **Node.js 22.12 or newer** and **pnpm 10.28.2**.
 
 ```bash
-git clone https://github.com/crawfordbros/admin.git
-cd admin
+git clone https://github.com/crawfordbros/web.git
+cd web
 pnpm install --frozen-lockfile
 cp .env.example .env.local
-```
-
-Set `VITE_CLERK_PUBLISHABLE_KEY` in `.env.local` to the development application's publishable key, then start Vite:
-
-```bash
 pnpm dev
 ```
 
-Open `http://localhost:5174/portal/login` for the property portal and admin sign-in, or `http://localhost:5174/steward/login` for the crew app. Without a Clerk key, the app displays a configuration message.
+Open `http://localhost:5173`. Development mode uses a Turnstile test site key automatically, so no production key is needed to start the site.
 
-Cross-app development links use `test.cbenvironments.com`. To use those links locally, add `127.0.0.1 test.cbenvironments.com` to your hosts file and run the companion website on port 5173.
+Cross-app development links use `test.cbenvironments.com`. To use those links locally, add `127.0.0.1 test.cbenvironments.com` to your hosts file. The companion admin app runs on port 5174.
 
-### Environment variables
+### Environment and backend
 
-See [`.env.example`](.env.example) for the configuration template.
-
-| Variable | Purpose |
+| Setting | Purpose |
 | --- | --- |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Required for sign-in and staging/production builds. Use a development `pk_test_…` key locally; production builds require `pk_live_…`. |
-| `VITE_GOOGLE_MAPS_API_KEY` | Optional browser key for address suggestions and map previews. Address entry works as plain text when omitted. Restrict the key by HTTP referrer and API. |
+| `VITE_TURNSTILE_SITE_KEY` | Public widget key required for production builds. Development, tunnel, and staging modes use the configured test key instead. |
+| [`src/config.ts`](src/config.ts) | Build-mode URLs, portal links, and shared business details. |
+| [`vite.config.ts`](vite.config.ts) | Development ports, API proxy, build checks, and crawler policy. |
 
-`VITE_*` values are included in the browser bundle. Keep secret keys on the backend and local configuration in the ignored `.env.local` file. Deployment keys are supplied through the build environment.
+See [`.env.example`](.env.example) for the environment template. `VITE_*` values are included in the browser bundle; the matching Turnstile secret belongs on the backend. Local values go in the ignored `.env.local` file, and production values come from the build environment.
 
-### Backend and HTTPS
+Development and preview servers proxy `/api/*` to the shared staging API. Connected submissions write staging data and may send staging email. The public checkout does not include a local backend; isolated browser tests use a separately provisioned API instead.
 
-Development and preview servers proxy `/api/*` to the shared staging API configured in [`vite.config.ts`](vite.config.ts). Connected changes affect staging data and may send staging email. A fresh public checkout does not provide its own API or isolated dataset.
-
-Passkeys require HTTPS or localhost and are tied to the hostname where they were enrolled. Maintainers with the existing Cloudflare Tunnel configuration can use `pnpm dev:tunnel` in both frontends and `pnpm tunnel` in the web repo. The tunnel credentials and remote configuration are provisioned separately.
+Maintainers with the existing Cloudflare Tunnel configuration can run `pnpm dev:tunnel` in both frontends, followed by `pnpm tunnel` in this repo, for the configured HTTPS test hostnames. The tunnel credentials and remote configuration are provisioned separately.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm dev` | Start the development server on port 5174. |
+| `pnpm dev` | Start the development server on port 5173. |
 | `pnpm dev:tunnel` | Start Vite with the configured HTTPS tunnel hostname. |
 | `pnpm typecheck` | Check the TypeScript projects. |
 | `pnpm lint` | Run ESLint. |
 | `pnpm test` | Run unit and component tests. |
-| `pnpm test:e2e` | Run Playwright checks on desktop and mobile. |
-| `pnpm build:staging` | Build with staging configuration and a configured Clerk key. |
-| `pnpm build` | Build for production; requires a live Clerk publishable key. |
-| `pnpm preview` | Serve the built app on port 4175. |
+| `pnpm build:staging` | Build and prerender with staging configuration. |
+| `pnpm build` | Build and prerender for production; requires a real Turnstile site key. |
+| `pnpm preview` | Serve the built site on port 4173. |
+| `pnpm test:e2e` | Run desktop and mobile browser tests; requires the private API. |
 
-Unit and component tests use test fixtures and mocked authentication. Browser tests cover signed-out routing, sign-in, UI behavior, and accessibility; the authentication checks need a configured Clerk key and network access. Install the browser before the first run:
+Production builds reject missing or known Turnstile test keys. For a local build without a production key, use:
+
+```bash
+pnpm build:staging
+pnpm preview
+```
+
+### Browser tests
+
+The Playwright configuration expects the private API at `../api`, or at the path supplied through `CBES_API_DIR`. It starts the API, applies local migrations and seed data, and starts an isolated frontend on port 5183. Its form tests use local D1/R2 storage rather than shared staging.
+
+After provisioning that backend and its dependencies:
 
 ```bash
 pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
+The suite covers page navigation, forms, and accessibility across desktop and mobile viewports. Unit and component tests run independently with `pnpm test`.
+
 ## Project layout
 
 ```text
 src/
-  App.tsx           Routes and application providers
-  access.ts         Roles and frontend access rules
-  components/       Shared UI and the admin, property, and crew shells
-  pages/            Screens grouped by workflow
-  lib/              API client, reports, authentication, and offline helpers
-  test/             Fixtures and test setup
-public/             Static assets and the Steward service worker
-shared/             Shared serving-policy constants
-worker/             Cloudflare Worker for app routing and response headers
-tests/e2e/          Playwright browser tests
+  site/              Public page components
+  components/        Layout, forms, and shared UI
+  lib/               API client, validation, SEO, images, and service calendar
+  config.ts          Public configuration and business details
+  routes.tsx         Browser routes
+  entry-server.tsx   Build-time rendering entry point
+  prerender-paths.ts Public routes rendered during the build
+public/              Static assets, sitemap, and web manifest
+scripts/             Prerendering, screenshots, and image generation
+tests/e2e/           Playwright browser tests
 ```
 
-## Build and deployment
+## Rendering and integration
 
-Build output lives in `dist/portal/`, with assets served beneath `/portal/`. The [Worker](worker/index.ts) serves the application for `/admin*`, `/portal*`, and `/steward*`, including direct navigation to nested routes. Portal HTML uses no-index, no-store, and frame-protection headers.
+The build creates client assets, renders public routes to HTML, and writes the final site to `dist/`. React hydrates those pages in the browser. The temporary server bundle is removed after prerendering; production hosting serves static assets.
 
-[`wrangler.jsonc`](wrangler.jsonc) defines the project's staging and production routes. For maintainers with the corresponding Cloudflare access and build configuration:
+`/report?p=<property_slug>&u=<unit_code>` prefills the resident form from a property QR code. `/report/:token` loads report status in the browser and is excluded from prerendering. Production crawler rules exclude report-status, API, and authenticated app paths; non-production builds discourage indexing.
+
+The frontend uses same-origin `/api/*` requests. In the project's hosting setup, separate routes serve the private API and the admin app's `/portal*`, `/admin*`, and `/steward*` paths. An alternative host needs equivalent API routing and application fallbacks. Changes to the request schemas in [`src/lib/schemas.ts`](src/lib/schemas.ts) must stay compatible with the private API.
+
+## Deployment
+
+[`wrangler.jsonc`](wrangler.jsonc) defines the project's Cloudflare staging and production routes. For maintainers with the corresponding Cloudflare access and build configuration:
 
 ```bash
 pnpm exec wrangler login
@@ -118,7 +126,7 @@ pnpm deploy:staging
 pnpm deploy:production
 ```
 
-Each deployment command builds before uploading. The public website and private API are deployed separately; publishing this frontend does not provision backend services or accounts.
+Each deployment command builds and prerenders before uploading. The API and admin app are deployed separately. Production form submissions require matching Turnstile configuration on the website and backend.
 
 ## License
 
