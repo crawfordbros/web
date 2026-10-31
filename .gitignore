@@ -8,8 +8,9 @@ dist
 /.env
 /.env.*
 !/.env.example
-# Docs stay local
+# Track the public README; keep other Markdown notes local.
 *.md
+!/README.md
 /claude.md
 *.tsbuildinfo
 test-results
